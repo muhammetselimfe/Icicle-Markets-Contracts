@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../core/SignalsCore.sol";
+import "../core/IcicleOptionsCore.sol";
 import "../lib/LazyMulSegmentTree.sol";
 import "../lib/ExposureDiffLib.sol";
 import "../lib/TickBinLib.sol";
 import "../utils/SeedData.sol";
 
-/// @notice Harness extending SignalsCore with helpers to seed markets/trees for tests.
-contract SignalsCoreHarness is SignalsCore {
+/// @notice Harness extending IcicleOptionsCore with helpers to seed markets/trees for tests.
+contract IcicleOptionsCoreHarness is IcicleOptionsCore {
     using LazyMulSegmentTree for LazyMulSegmentTree.Tree;
 
     /// @dev Internal helper for raw prefix sum (test-only, not in production lib)
@@ -18,7 +18,7 @@ contract SignalsCoreHarness is SignalsCore {
         }
     }
 
-    function harnessSetMarket(uint256 marketId, ISignalsCore.Market calldata market) external onlyOwner {
+    function harnessSetMarket(uint256 marketId, IIcicleOptionsCore.Market calldata market) external onlyOwner {
         markets[marketId] = market;
     }
 
@@ -31,7 +31,7 @@ contract SignalsCoreHarness is SignalsCore {
     }
 
     function harnessSetPositionContract(address pos) external onlyOwner {
-        positionContract = ISignalsPosition(pos);
+        positionContract = IIcicleOptionsPosition(pos);
     }
 
     function harnessSetPaymentToken(address token) external onlyOwner {
@@ -48,7 +48,7 @@ contract SignalsCoreHarness is SignalsCore {
         return tree.totalSum();
     }
 
-    function harnessGetMarket(uint256 marketId) external view returns (ISignalsCore.Market memory) {
+    function harnessGetMarket(uint256 marketId) external view returns (IIcicleOptionsCore.Market memory) {
         return markets[marketId];
     }
 
@@ -69,7 +69,7 @@ contract SignalsCoreHarness is SignalsCore {
      * @param exposure Target exposure at this tick (token units)
      */
     function harnessSetExposure(uint256 marketId, int256 tick, uint256 exposure) external onlyOwner {
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         uint32 bin = TickBinLib.tickToBin(market.minTick, market.tickSpacing, market.numBins, tick);
         
         // Get current exposure via prefix sum
@@ -101,7 +101,7 @@ contract SignalsCoreHarness is SignalsCore {
         int256 upperTick,
         uint256 quantity
     ) external onlyOwner {
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         (uint32 loBin, uint32 hiBin) = TickBinLib.ticksToBins(
             market.minTick, market.maxTick, market.tickSpacing, market.numBins,
             lowerTick, upperTick
@@ -122,7 +122,7 @@ contract SignalsCoreHarness is SignalsCore {
         int256 tick,
         uint256 quantity
     ) external onlyOwner {
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         uint32 bin = TickBinLib.tickToBin(market.minTick, market.tickSpacing, market.numBins, tick);
         
         int256 current = _rawPrefixSum(_exposureDiff[marketId], bin);
@@ -166,7 +166,7 @@ contract SignalsCoreHarness is SignalsCore {
      * @return exposure Total exposure at this tick
      */
     function harnessGetExposure(uint256 marketId, int256 tick) external view returns (uint256 exposure) {
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         uint32 bin = TickBinLib.tickToBin(market.minTick, market.tickSpacing, market.numBins, tick);
         return ExposureDiffLib.pointQuery(_exposureDiff[marketId], bin);
     }

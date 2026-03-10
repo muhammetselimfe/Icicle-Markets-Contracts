@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Signer } from "ethers";
-import { MockERC20, SignalsCoreHarness, SignalsCore } from '../../../typechain-types';
+import { MockERC20, IcicleOptionsCoreHarness, IcicleOptionsCore } from '../../../typechain-types';
 
 /**
  * Core View Getters Tests
@@ -10,7 +10,7 @@ import { MockERC20, SignalsCoreHarness, SignalsCore } from '../../../typechain-t
  */
 describe("Core View Getters", () => {
   let owner: Signer;
-  let core: SignalsCoreHarness;
+  let core: IcicleOptionsCoreHarness;
   let paymentToken: MockERC20;
   let modules: {
     trade: string;
@@ -67,20 +67,20 @@ describe("Core View Getters", () => {
     };
 
     // Deploy core harness with library linking
-    const SignalsCoreHarnessFactory = await ethers.getContractFactory(
-      "SignalsCoreHarness",
+    const IcicleOptionsCoreHarnessFactory = await ethers.getContractFactory(
+      "IcicleOptionsCoreHarness",
       {
         libraries: { LazyMulSegmentTree: await lazyLib.getAddress() },
       }
     );
-    const coreImpl = await SignalsCoreHarnessFactory.deploy();
+    const coreImpl = await IcicleOptionsCoreHarnessFactory.deploy();
 
     const positionImplFactory = await ethers.getContractFactory(
-      "SignalsPosition"
+      "IcicleOptionsPosition"
     );
     const positionImpl = await positionImplFactory.deploy();
     const lpShareImpl = await (
-      await ethers.getContractFactory("SignalsLPShare")
+      await ethers.getContractFactory("IcicleOptionsLPShare")
     ).deploy();
     const proxyFactory = await ethers.getContractFactory("TestERC1967Proxy");
     const positionProxy = await proxyFactory.deploy(
@@ -97,22 +97,22 @@ describe("Core View Getters", () => {
     );
 
     const position = await ethers.getContractAt(
-      "SignalsPosition",
+      "IcicleOptionsPosition",
       await positionProxy.getAddress()
     );
     const lpShare = await ethers.getContractAt(
-      "SignalsLPShare",
+      "IcicleOptionsLPShare",
       await lpShareProxy.getAddress()
     );
-    core = SignalsCoreHarnessFactory.attach(
+    core = IcicleOptionsCoreHarnessFactory.attach(
       await coreProxy.getAddress()
-    ) as SignalsCoreHarness;
+    ) as IcicleOptionsCoreHarness;
 
     const submitWindow = 3600;
     const opsWindow = 86400 - submitWindow;
     const claimDelay = submitWindow + opsWindow;
     const feedId = ethers.encodeBytes32String("BTC");
-    const coreParams: SignalsCore.InitParamsStruct = {
+    const coreParams: IcicleOptionsCore.InitParamsStruct = {
       paymentToken: await paymentToken.getAddress(),
       positionContract: await position.getAddress(),
       lpShareToken: await lpShare.getAddress(),
@@ -144,7 +144,7 @@ describe("Core View Getters", () => {
     await lpShare.initialize(
       await core.getAddress(),
       await paymentToken.getAddress(),
-      "Signals LP Share",
+      "Icicle Options LP Share",
       "sLP",
       await owner.getAddress()
     );

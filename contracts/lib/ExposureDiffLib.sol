@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {SignalsErrors as SE} from "../errors/SignalsErrors.sol";
+import {IcicleOptionsErrors as SE} from "../errors/IcicleOptionsErrors.sol";
 
 /**
  * @title ExposureDiffLib

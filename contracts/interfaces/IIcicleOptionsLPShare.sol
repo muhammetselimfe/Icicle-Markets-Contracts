@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-/// @title ISignalsLPShare
+/// @title IIcicleOptionsLPShare
 /// @notice Interface for LP Share token (ERC-20 + ERC-4626 compatible)
-interface ISignalsLPShare {
+interface IIcicleOptionsLPShare {
     /// @notice Mint shares to user (only callable by Core)
     function mint(address to, uint256 shares) external;
     

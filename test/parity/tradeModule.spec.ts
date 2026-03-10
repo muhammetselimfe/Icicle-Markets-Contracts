@@ -2,35 +2,35 @@ import { ethers } from "hardhat";
 import { expect } from "chai";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import {
-  SignalsUSDToken,
+  IcicleOptionsUSDToken,
   MockFeePolicy,
   TradeModuleProxy,
   TradeModule,
-  SignalsPosition,
+  IcicleOptionsPosition,
   TestERC1967Proxy,
 } from "../../typechain-types";
-import { ISignalsCore } from "../../typechain-types/contracts/testonly/TradeModuleProxy";
+import { IIcicleOptionsCore } from "../../typechain-types/contracts/testonly/TradeModuleProxy";
 import { WAD } from "../helpers/constants";
 
 interface DeployedSystem {
   owner: HardhatEthersSigner;
   userA: HardhatEthersSigner;
   userB: HardhatEthersSigner;
-  payment: SignalsUSDToken;
-  position: SignalsPosition;
+  payment: IcicleOptionsUSDToken;
+  position: IcicleOptionsPosition;
   core: TradeModuleProxy;
   feePolicy: MockFeePolicy;
   tradeModule: TradeModule;
 }
 
 async function deploySystem(
-  marketOverrides: Partial<ISignalsCore.MarketStruct> = {},
+  marketOverrides: Partial<IIcicleOptionsCore.MarketStruct> = {},
   feeBps = 0
 ): Promise<DeployedSystem> {
   const [owner, userA, userB] = await ethers.getSigners();
 
   const payment = await (
-    await ethers.getContractFactory("SignalsUSDToken")
+    await ethers.getContractFactory("IcicleOptionsUSDToken")
   ).deploy();
   const feePolicy = await (
     await ethers.getContractFactory("MockFeePolicy")
@@ -51,7 +51,7 @@ async function deploySystem(
   ).deploy(tradeModule.target);
 
   const positionImplFactory = await ethers.getContractFactory(
-    "SignalsPosition"
+    "IcicleOptionsPosition"
   );
   const positionImpl = await positionImplFactory.deploy();
   await positionImpl.waitForDeployment();
@@ -63,9 +63,9 @@ async function deploySystem(
     await ethers.getContractFactory("TestERC1967Proxy")
   ).deploy(await positionImpl.getAddress(), positionInit)) as TestERC1967Proxy;
   const position = (await ethers.getContractAt(
-    "SignalsPosition",
+    "IcicleOptionsPosition",
     await positionProxy.getAddress()
-  )) as SignalsPosition;
+  )) as IcicleOptionsPosition;
 
   await core.setAddresses(
     payment.target,
@@ -75,7 +75,7 @@ async function deploySystem(
   );
 
   const now = (await ethers.provider.getBlock("latest"))!.timestamp;
-  const market: ISignalsCore.MarketStruct = {
+  const market: IIcicleOptionsCore.MarketStruct = {
     isSeeded: true,
     settled: false,
     snapshotChunksDone: false,

@@ -1,0 +1,55 @@
+{
+  "network": "fuji",
+  "version": 2,
+  "contracts": {
+    "IcicleOptionsCreate2Factory": "0xE0C6e0264DAd64654901A2466ADA26483A326760",
+    "IcicleOptionsDeployer": "0xdA104D8c6d97fEe2e95Fe60C9D5a5bB7f85FD1D3",
+    "IcicleOptionsCoreProxy": "0x5163b4aB77650D1D937a5c5E6B0d012e4659546e",
+    "IcicleOptionsCoreImplementation": "0x4801835D663d2bC850D190839BB67dAD01a94fC4",
+    "IcicleOptionsPositionProxy": "0x3FD90718b2aA7D15417d1d494b653c7EF44dff70",
+    "IcicleOptionsPositionImplementation": "0x5a2dAAdB2d032d9c203162ca5Aa12869690fb522",
+    "IcicleOptionsLPShareProxy": "0xf8Ea96283fA5726fb64f3C57695a333Ce007B56a",
+    "IcicleOptionsLPShareImplementation": "0x3B6DF25399F47f11FAD4b30F43787805FC802049",
+    "IcicleOptionsLPShare": "0xf8Ea96283fA5726fb64f3C57695a333Ce007B56a",
+    "TradeModule": "0xED9a266E665Fc5fa5a2aB278fc1D0dD1046aDecB",
+    "MarketLifecycleModule": "0x5d723f76d809C15B6960e468E4f9bc599A76E637",
+    "OracleModule": "0x52E4BFF6BD6df5a7c074824E6bbDFb414773D0d9",
+    "RiskModule": "0x54fb3842e7d877f23b9975E287822827dE8B4b50",
+    "LPVaultModule": "0x997E41783e058d02835C64cFDf8D99b6A5f3D2ac",
+    "FeePolicyNull": "0xb472df22384824620EF624232aDC213267D29DBc",
+    "FeePolicy10bps": "0x16e86bDFC9afb1a748f16F45a87c464fa72Af3d3",
+    "FeePolicy50bps": "0x81298dCc9941722674CA6ebc58AC3A64cE7207FE",
+    "FeePolicy100bps": "0x61a8Ebc1C8408408c6219D142eE40Dc04DcDC965",
+    "FeePolicy200bps": "0x38fe72d0Ca6D58a222b8Eb5D3A6ee0DA25A23DF9",
+    "PaymentToken": "0x12ecFc9715cEA5DAd986F5B59848aEc7044e66E8",
+    "LazyMulSegmentTree": "0xa0875EDbF87708C1852611B49642D83318297Bb1"
+  },
+  "config": {
+    "settlementSubmitWindow": "600",
+    "settlementFinalizeDeadline": "900",
+    "pendingOpsWindow": "300",
+    "redstoneFeedId": "AVAX",
+    "redstoneFeedDecimals": 8,
+    "redstoneMaxSampleDistance": "600",
+    "redstoneFutureTolerance": "60",
+    "lpShareTokenName": "Icicle Options LP",
+    "lpShareTokenSymbol": "ICOLP",
+    "operatorAllowlist": [
+      "0xCd37EAb6b0eeffa3dC0b0f138ae57275a54Fc88d"
+    ],
+    "owners": {
+      "core": "0xCd37EAb6b0eeffa3dC0b0f138ae57275a54Fc88d",
+      "position": "0xCd37EAb6b0eeffa3dC0b0f138ae57275a54Fc88d",
+      "lpShare": "0xCd37EAb6b0eeffa3dC0b0f138ae57275a54Fc88d"
+    },
+    "deployerEOA": "0xCd37EAb6b0eeffa3dC0b0f138ae57275a54Fc88d"
+  },
+  "history": [
+    {
+      "action": "deploy",
+      "deployer": "0xCd37EAb6b0eeffa3dC0b0f138ae57275a54Fc88d",
+      "version": 2,
+      "timestamp": 1772409437
+    }
+  ]
+}

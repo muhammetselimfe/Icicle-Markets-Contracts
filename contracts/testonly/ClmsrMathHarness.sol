@@ -6,7 +6,7 @@ import "../lib/ClmsrMath.sol";
 
 /// @notice Harness for CLMSR math: initializes a tree from bins and exposes quote helpers.
 /// @dev Uses the same LazyMulSegmentTree/ClmsrMath stack that backs TradeModule,
-///      but without touching SignalsCore storage.
+///      but without touching IcicleOptionsCore storage.
 contract ClmsrMathHarness {
     using LazyMulSegmentTree for LazyMulSegmentTree.Tree;
 

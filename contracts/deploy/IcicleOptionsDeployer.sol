@@ -3,13 +3,13 @@ pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts/utils/Create2.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import "../errors/SignalsErrors.sol";
-import "../core/SignalsCore.sol";
-import "../position/SignalsPosition.sol";
-import "../tokens/SignalsLPShare.sol";
+import "../errors/IcicleOptionsErrors.sol";
+import "../core/IcicleOptionsCore.sol";
+import "../position/IcicleOptionsPosition.sol";
+import "../tokens/IcicleOptionsLPShare.sol";
 
 /// @notice Deterministic one-shot deployer for Core/Position/LPShare proxies.
-contract SignalsDeployer is SignalsErrors {
+contract IcicleOptionsDeployer is IcicleOptionsErrors {
     address public immutable deployerEOA;
     bool public executed;
 
@@ -33,7 +33,7 @@ contract SignalsDeployer is SignalsErrors {
         address expectedCoreProxy,
         address expectedPositionProxy,
         address expectedLpShareProxy,
-        SignalsCore.InitParams calldata coreParams,
+        IcicleOptionsCore.InitParams calldata coreParams,
         string calldata lpShareName,
         string calldata lpShareSymbol
     ) external onlyDeployer returns (address coreProxy, address positionProxy, address lpShareProxy) {
@@ -78,9 +78,9 @@ contract SignalsDeployer is SignalsErrors {
             revert Create2AddressMismatch(coreParams.lpShareToken, lpShareProxy);
         }
 
-        SignalsCore(coreProxy).initialize(coreParams);
-        SignalsPosition(positionProxy).initialize(coreProxy, coreParams.ownerSafe);
-        SignalsLPShare(lpShareProxy).initialize(
+        IcicleOptionsCore(coreProxy).initialize(coreParams);
+        IcicleOptionsPosition(positionProxy).initialize(coreProxy, coreParams.ownerSafe);
+        IcicleOptionsLPShare(lpShareProxy).initialize(
             coreProxy,
             coreParams.paymentToken,
             lpShareName,
@@ -88,46 +88,46 @@ contract SignalsDeployer is SignalsErrors {
             coreParams.ownerSafe
         );
 
-        if (SignalsCore(coreProxy).owner() != coreParams.ownerSafe) {
-            revert Create2AddressMismatch(coreParams.ownerSafe, SignalsCore(coreProxy).owner());
+        if (IcicleOptionsCore(coreProxy).owner() != coreParams.ownerSafe) {
+            revert Create2AddressMismatch(coreParams.ownerSafe, IcicleOptionsCore(coreProxy).owner());
         }
-        if (SignalsPosition(positionProxy).owner() != coreParams.ownerSafe) {
-            revert Create2AddressMismatch(coreParams.ownerSafe, SignalsPosition(positionProxy).owner());
+        if (IcicleOptionsPosition(positionProxy).owner() != coreParams.ownerSafe) {
+            revert Create2AddressMismatch(coreParams.ownerSafe, IcicleOptionsPosition(positionProxy).owner());
         }
-        if (SignalsLPShare(lpShareProxy).owner() != coreParams.ownerSafe) {
-            revert Create2AddressMismatch(coreParams.ownerSafe, SignalsLPShare(lpShareProxy).owner());
+        if (IcicleOptionsLPShare(lpShareProxy).owner() != coreParams.ownerSafe) {
+            revert Create2AddressMismatch(coreParams.ownerSafe, IcicleOptionsLPShare(lpShareProxy).owner());
         }
-        address paymentToken = address(SignalsCore(coreProxy).paymentToken());
+        address paymentToken = address(IcicleOptionsCore(coreProxy).paymentToken());
         if (paymentToken != coreParams.paymentToken) {
             revert Create2AddressMismatch(coreParams.paymentToken, paymentToken);
         }
-        address positionContract = address(SignalsCore(coreProxy).positionContract());
+        address positionContract = address(IcicleOptionsCore(coreProxy).positionContract());
         if (positionContract != positionProxy) {
             revert Create2AddressMismatch(positionProxy, positionContract);
         }
-        if (SignalsCore(coreProxy).lpShareToken() != lpShareProxy) {
-            revert Create2AddressMismatch(lpShareProxy, SignalsCore(coreProxy).lpShareToken());
+        if (IcicleOptionsCore(coreProxy).lpShareToken() != lpShareProxy) {
+            revert Create2AddressMismatch(lpShareProxy, IcicleOptionsCore(coreProxy).lpShareToken());
         }
-        if (SignalsCore(coreProxy).tradeModule() != coreParams.tradeModule) {
-            revert Create2AddressMismatch(coreParams.tradeModule, SignalsCore(coreProxy).tradeModule());
+        if (IcicleOptionsCore(coreProxy).tradeModule() != coreParams.tradeModule) {
+            revert Create2AddressMismatch(coreParams.tradeModule, IcicleOptionsCore(coreProxy).tradeModule());
         }
-        if (SignalsCore(coreProxy).lifecycleModule() != coreParams.lifecycleModule) {
-            revert Create2AddressMismatch(coreParams.lifecycleModule, SignalsCore(coreProxy).lifecycleModule());
+        if (IcicleOptionsCore(coreProxy).lifecycleModule() != coreParams.lifecycleModule) {
+            revert Create2AddressMismatch(coreParams.lifecycleModule, IcicleOptionsCore(coreProxy).lifecycleModule());
         }
-        if (SignalsCore(coreProxy).riskModule() != coreParams.riskModule) {
-            revert Create2AddressMismatch(coreParams.riskModule, SignalsCore(coreProxy).riskModule());
+        if (IcicleOptionsCore(coreProxy).riskModule() != coreParams.riskModule) {
+            revert Create2AddressMismatch(coreParams.riskModule, IcicleOptionsCore(coreProxy).riskModule());
         }
-        if (SignalsCore(coreProxy).vaultModule() != coreParams.vaultModule) {
-            revert Create2AddressMismatch(coreParams.vaultModule, SignalsCore(coreProxy).vaultModule());
+        if (IcicleOptionsCore(coreProxy).vaultModule() != coreParams.vaultModule) {
+            revert Create2AddressMismatch(coreParams.vaultModule, IcicleOptionsCore(coreProxy).vaultModule());
         }
-        if (SignalsCore(coreProxy).oracleModule() != coreParams.oracleModule) {
-            revert Create2AddressMismatch(coreParams.oracleModule, SignalsCore(coreProxy).oracleModule());
+        if (IcicleOptionsCore(coreProxy).oracleModule() != coreParams.oracleModule) {
+            revert Create2AddressMismatch(coreParams.oracleModule, IcicleOptionsCore(coreProxy).oracleModule());
         }
-        if (SignalsPosition(positionProxy).core() != coreProxy) {
-            revert Create2AddressMismatch(coreProxy, SignalsPosition(positionProxy).core());
+        if (IcicleOptionsPosition(positionProxy).core() != coreProxy) {
+            revert Create2AddressMismatch(coreProxy, IcicleOptionsPosition(positionProxy).core());
         }
-        if (SignalsLPShare(lpShareProxy).core() != coreProxy) {
-            revert Create2AddressMismatch(coreProxy, SignalsLPShare(lpShareProxy).core());
+        if (IcicleOptionsLPShare(lpShareProxy).core() != coreProxy) {
+            revert Create2AddressMismatch(coreProxy, IcicleOptionsLPShare(lpShareProxy).core());
         }
 
         executed = true;

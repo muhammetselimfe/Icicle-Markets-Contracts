@@ -251,8 +251,8 @@ async function main() {
   }
 
   const envData = loadEnvironment(env);
-  const coreAddress = envData.contracts.SignalsCoreProxy;
-  if (!coreAddress) throw new Error("Missing SignalsCoreProxy in environment file");
+  const coreAddress = envData.contracts.IcicleOptionsCoreProxy;
+  if (!coreAddress) throw new Error("Missing IcicleOptionsCoreProxy in environment file");
 
   const [deployer] = await ethers.getSigners();
   if (EXECUTE && !deployer) {
@@ -260,7 +260,7 @@ async function main() {
   }
   const runner: any = EXECUTE ? deployer : ethers.provider;
   const core = await ethers.getContractAt(
-    "SignalsCore",
+    "IcicleOptionsCore",
     coreAddress,
     runner
   );

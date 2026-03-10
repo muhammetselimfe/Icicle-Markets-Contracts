@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../core/SignalsCoreStorage.sol";
+import "../core/IcicleOptionsCoreStorage.sol";
 import "../lib/FixedPointMathU.sol";
 import "../lib/RiskMath.sol";
 import "../lib/SeedDataLib.sol";
-import {SignalsErrors as SE} from "../errors/SignalsErrors.sol";
+import {IcicleOptionsErrors as SE} from "../errors/IcicleOptionsErrors.sol";
 
 /// @title RiskModule
 /// @notice Delegate-only module for Risk calculations and enforcement
@@ -16,9 +16,9 @@ import {SignalsErrors as SE} from "../errors/SignalsErrors.sol";
 ///
 ///      Core-first Risk Gate Architecture:
 ///      This module provides BOTH calculations AND enforcement via gate functions.
-///      SignalsCore calls gate* functions BEFORE delegating to target modules.
+///      IcicleOptionsCore calls gate* functions BEFORE delegating to target modules.
 ///      This ensures bypass-proof enforcement and clear single point of risk validation.
-contract RiskModule is SignalsCoreStorage {
+contract RiskModule is IcicleOptionsCoreStorage {
     using FixedPointMathU for uint256;
 
     address private immutable self;
@@ -174,7 +174,7 @@ contract RiskModule is SignalsCoreStorage {
 
     /**
      * @notice Gate for market creation - validates α limit and prior admissibility
-     * @dev Called by SignalsCore BEFORE MarketLifecycleModule.createMarket
+     * @dev Called by IcicleOptionsCore BEFORE MarketLifecycleModule.createMarket
      *      Enforces: αlimit,t+1 = max{0, αbase,t+1 * (1 - k * DD_t)}
      *      Enforces: ΔEₜ ≤ B^eff_{t-1} (prior admissibility)
      * @param liquidityParameter Market α to validate (WAD)

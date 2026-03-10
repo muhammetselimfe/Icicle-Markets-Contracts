@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../interfaces/ISignalsPosition.sol";
+import "../interfaces/IIcicleOptionsPosition.sol";
 
 /// @notice Minimal mock position (ERC721-like) for testing TradeModule flows.
-contract MockSignalsPosition is ISignalsPosition {
+contract MockIcicleOptionsPosition is IIcicleOptionsPosition {
     event PositionMinted(uint256 indexed positionId, address owner);
 
     struct MinimalPosition {
@@ -53,9 +53,9 @@ contract MockSignalsPosition is ISignalsPosition {
         p.quantity = newQuantity;
     }
 
-    function getPosition(uint256 positionId) external view returns (ISignalsPosition.Position memory position) {
+    function getPosition(uint256 positionId) external view returns (IIcicleOptionsPosition.Position memory position) {
         MinimalPosition memory p = _positions[positionId];
-        position = ISignalsPosition.Position({
+        position = IIcicleOptionsPosition.Position({
             marketId: p.marketId,
             lowerTick: p.lowerTick,
             upperTick: p.upperTick,

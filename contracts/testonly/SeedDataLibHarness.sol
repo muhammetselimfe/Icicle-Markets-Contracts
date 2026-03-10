@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../errors/SignalsErrors.sol";
+import "../errors/IcicleOptionsErrors.sol";
 import "../lib/SeedDataLib.sol";
 import "../lib/RiskMath.sol";
 
 /// @title SeedDataLibHarness
 /// @notice Exposes SeedDataLib helpers for unit testing.
-contract SeedDataLibHarness is SignalsErrors {
+contract SeedDataLibHarness is IcicleOptionsErrors {
     function codeSize(address seedData) external view returns (uint256) {
         return SeedDataLib.codeSize(seedData);
     }

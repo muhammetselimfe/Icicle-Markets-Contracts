@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../core/SignalsCoreStorage.sol";
-import "../interfaces/ISignalsCore.sol";
-import "../interfaces/ISignalsPosition.sol";
+import "../core/IcicleOptionsCoreStorage.sol";
+import "../interfaces/IIcicleOptionsCore.sol";
+import "../interfaces/IIcicleOptionsPosition.sol";
 import "../interfaces/IFeePolicy.sol";
 import "../lib/LazyMulSegmentTree.sol";
 
 /// @notice Minimal core proxy to delegate trade/view calls to TradeModule for tests.
-contract TradeModuleProxy is SignalsCoreStorage {
+contract TradeModuleProxy is IcicleOptionsCoreStorage {
     using LazyMulSegmentTree for LazyMulSegmentTree.Tree;
 
     address public module;
@@ -25,12 +25,12 @@ contract TradeModuleProxy is SignalsCoreStorage {
         uint64 finalizeDeadline
     ) external {
         paymentToken = IERC20(payment);
-        positionContract = ISignalsPosition(position);
+        positionContract = IIcicleOptionsPosition(position);
         settlementSubmitWindow = submitWindow;
         claimDelaySeconds = finalizeDeadline;
     }
 
-    function setMarket(uint256 marketId, ISignalsCore.Market calldata market) external {
+    function setMarket(uint256 marketId, IIcicleOptionsCore.Market calldata market) external {
         markets[marketId] = market;
     }
 
@@ -130,7 +130,7 @@ contract TradeModuleProxy is SignalsCoreStorage {
     }
 
     /// @notice Retrieve market struct for testing
-    function harnessGetMarket(uint256 marketId) external view returns (ISignalsCore.Market memory) {
+    function harnessGetMarket(uint256 marketId) external view returns (IIcicleOptionsCore.Market memory) {
         return markets[marketId];
     }
 

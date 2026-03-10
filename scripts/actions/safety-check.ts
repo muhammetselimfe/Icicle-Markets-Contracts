@@ -19,10 +19,10 @@ export async function safetyCheckAction(env: Environment) {
   const envData = loadEnvironment(env);
 
   const required = [
-    "SignalsCoreProxy",
-    "SignalsCoreImplementation",
-    "SignalsPositionProxy",
-    "SignalsPositionImplementation",
+    "IcicleOptionsCoreProxy",
+    "IcicleOptionsCoreImplementation",
+    "IcicleOptionsPositionProxy",
+    "IcicleOptionsPositionImplementation",
     "TradeModule",
     "MarketLifecycleModule",
     "RiskModule",
@@ -35,31 +35,31 @@ export async function safetyCheckAction(env: Environment) {
     }
   }
 
-  const coreProxy = envData.contracts.SignalsCoreProxy;
-  const positionProxy = envData.contracts.SignalsPositionProxy;
-  const lpShareProxy = envData.contracts.SignalsLPShareProxy ?? envData.contracts.SignalsLPShare;
+  const coreProxy = envData.contracts.IcicleOptionsCoreProxy;
+  const positionProxy = envData.contracts.IcicleOptionsPositionProxy;
+  const lpShareProxy = envData.contracts.IcicleOptionsLPShareProxy ?? envData.contracts.IcicleOptionsLPShare;
   if (!lpShareProxy) {
-    throw new Error("Missing SignalsLPShareProxy (or SignalsLPShare) in environment file");
+    throw new Error("Missing IcicleOptionsLPShareProxy (or IcicleOptionsLPShare) in environment file");
   }
 
   const coreImpl = await upgrades.erc1967.getImplementationAddress(coreProxy);
   const positionImpl = await upgrades.erc1967.getImplementationAddress(positionProxy);
 
-  if (coreImpl.toLowerCase() !== envData.contracts.SignalsCoreImplementation.toLowerCase()) {
-    throw new Error(`Core impl mismatch: manifest=${coreImpl} env=${envData.contracts.SignalsCoreImplementation}`);
+  if (coreImpl.toLowerCase() !== envData.contracts.IcicleOptionsCoreImplementation.toLowerCase()) {
+    throw new Error(`Core impl mismatch: manifest=${coreImpl} env=${envData.contracts.IcicleOptionsCoreImplementation}`);
   }
-  if (positionImpl.toLowerCase() !== envData.contracts.SignalsPositionImplementation.toLowerCase()) {
+  if (positionImpl.toLowerCase() !== envData.contracts.IcicleOptionsPositionImplementation.toLowerCase()) {
     throw new Error(
-      `Position impl mismatch: manifest=${positionImpl} env=${envData.contracts.SignalsPositionImplementation}`
+      `Position impl mismatch: manifest=${positionImpl} env=${envData.contracts.IcicleOptionsPositionImplementation}`
     );
   }
-  const core = await ethers.getContractAt("SignalsCore", coreProxy);
-  const position = await ethers.getContractAt("SignalsPosition", positionProxy);
+  const core = await ethers.getContractAt("IcicleOptionsCore", coreProxy);
+  const position = await ethers.getContractAt("IcicleOptionsPosition", positionProxy);
   const chainLpShareToken = await core.lpShareToken();
   assertAddressMatch("LP share token", chainLpShareToken, lpShareProxy);
-  const lpShare = await ethers.getContractAt("SignalsLPShare", chainLpShareToken);
+  const lpShare = await ethers.getContractAt("IcicleOptionsLPShare", chainLpShareToken);
 
-  const expectedLpShareImpl = envData.contracts.SignalsLPShareImplementation;
+  const expectedLpShareImpl = envData.contracts.IcicleOptionsLPShareImplementation;
   if (expectedLpShareImpl) {
     try {
       const lpShareImpl = await upgrades.erc1967.getImplementationAddress(chainLpShareToken);
@@ -72,7 +72,7 @@ export async function safetyCheckAction(env: Environment) {
       );
     }
   } else {
-    console.warn("[safety-check] SignalsLPShareImplementation not set; skipping LPShare impl match check");
+    console.warn("[safety-check] IcicleOptionsLPShareImplementation not set; skipping LPShare impl match check");
   }
 
   const expectedCoreOwner = envData.config?.owners?.core;
@@ -224,8 +224,8 @@ export async function safetyCheckAction(env: Environment) {
   }
 
   const codeChecks = [
-    "SignalsCreate2Factory",
-    "SignalsDeployer",
+    "IcicleOptionsCreate2Factory",
+    "IcicleOptionsDeployer",
     "TradeModule",
     "MarketLifecycleModule",
     "RiskModule",
@@ -237,8 +237,8 @@ export async function safetyCheckAction(env: Environment) {
     "FeePolicy100bps",
     "FeePolicy200bps",
     "PaymentToken",
-    "SignalsLPShareProxy",
-    "SignalsLPShareImplementation",
+    "IcicleOptionsLPShareProxy",
+    "IcicleOptionsLPShareImplementation",
     "LazyMulSegmentTree",
   ];
   for (const name of codeChecks) {

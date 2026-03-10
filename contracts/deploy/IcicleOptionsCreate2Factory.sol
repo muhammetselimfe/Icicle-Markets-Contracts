@@ -2,10 +2,10 @@
 pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts/utils/Create2.sol";
-import "../errors/SignalsErrors.sol";
+import "../errors/IcicleOptionsErrors.sol";
 
 /// @notice Permissioned CREATE2 factory for deterministic deployments.
-contract SignalsCreate2Factory is SignalsErrors {
+contract IcicleOptionsCreate2Factory is IcicleOptionsErrors {
     address public immutable allowedDeployer;
 
     constructor(address allowedDeployer_) {

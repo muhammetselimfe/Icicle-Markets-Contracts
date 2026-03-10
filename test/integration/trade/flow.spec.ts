@@ -2,34 +2,34 @@ import { ethers } from "hardhat";
 import { expect } from "chai";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import {
-  SignalsUSDToken,
+  IcicleOptionsUSDToken,
   MockFeePolicy,
   TradeModuleProxy,
   TradeModule,
-  SignalsPosition,
+  IcicleOptionsPosition,
   TestERC1967Proxy,
 } from "../../../typechain-types";
-import { ISignalsCore } from "../../../typechain-types/contracts/testonly/TradeModuleProxy";
+import { IIcicleOptionsCore } from "../../../typechain-types/contracts/testonly/TradeModuleProxy";
 import { WAD } from "../../helpers/constants";
 
 interface DeployedSystem {
   owner: HardhatEthersSigner;
   user: HardhatEthersSigner;
-  payment: SignalsUSDToken;
-  position: SignalsPosition;
+  payment: IcicleOptionsUSDToken;
+  position: IcicleOptionsPosition;
   core: TradeModuleProxy;
   feePolicy: MockFeePolicy;
 }
 
 describe("TradeModule flow (minimal parity)", () => {
   async function deploySystem(
-    marketOverrides: Partial<ISignalsCore.MarketStruct> = {},
+    marketOverrides: Partial<IIcicleOptionsCore.MarketStruct> = {},
     feeBps = 0
   ): Promise<DeployedSystem> {
     const [owner, user] = await ethers.getSigners();
 
     const payment = await (
-      await ethers.getContractFactory("SignalsUSDToken")
+      await ethers.getContractFactory("IcicleOptionsUSDToken")
     ).deploy();
     const feePolicy = await (
       await ethers.getContractFactory("MockFeePolicy")
@@ -51,7 +51,7 @@ describe("TradeModule flow (minimal parity)", () => {
     ).deploy(tradeModule.target);
 
     const positionImplFactory = await ethers.getContractFactory(
-      "SignalsPosition"
+      "IcicleOptionsPosition"
     );
     const positionImpl = await positionImplFactory.deploy();
     await positionImpl.waitForDeployment();
@@ -63,9 +63,9 @@ describe("TradeModule flow (minimal parity)", () => {
       await ethers.getContractFactory("TestERC1967Proxy")
     ).deploy(positionImpl.target, positionInit)) as TestERC1967Proxy;
     const position = (await ethers.getContractAt(
-      "SignalsPosition",
+      "IcicleOptionsPosition",
       await positionProxy.getAddress()
-    )) as SignalsPosition;
+    )) as IcicleOptionsPosition;
 
     await core.setAddresses(
       payment.target,
@@ -79,7 +79,7 @@ describe("TradeModule flow (minimal parity)", () => {
     const defaultSeedCursor =
       marketOverrides.seedCursor ??
       (marketOverrides.isSeeded === false ? 0 : numBins);
-    const market: ISignalsCore.MarketStruct = {
+    const market: IIcicleOptionsCore.MarketStruct = {
       isSeeded: marketOverrides.isSeeded ?? true,
       settled: false,
       snapshotChunksDone: false,
@@ -116,8 +116,8 @@ describe("TradeModule flow (minimal parity)", () => {
     return {
       owner,
       user,
-      payment: payment as SignalsUSDToken,
-      position: position as SignalsPosition,
+      payment: payment as IcicleOptionsUSDToken,
+      position: position as IcicleOptionsPosition,
       core: core as TradeModuleProxy,
       feePolicy: feePolicy as MockFeePolicy,
     };
@@ -185,7 +185,7 @@ describe("TradeModule flow (minimal parity)", () => {
     // settlementTimestamp must be in the past for claim to be allowed.
     const m = await core.markets(1);
     const past = m.endTimestamp - 1000n;
-    const settledMarket: ISignalsCore.MarketStruct = {
+    const settledMarket: IIcicleOptionsCore.MarketStruct = {
       isSeeded: m.isSeeded,
       settled: true,
       snapshotChunksDone: m.snapshotChunksDone,
@@ -236,7 +236,7 @@ describe("TradeModule flow (minimal parity)", () => {
     // Claim gating is time-based (settlementTimestamp + Δ_claim).
     const currentTime = BigInt(await ethers.provider.getBlock("latest").then(b => b!.timestamp));
     const m = await core.markets(1);
-    const earlySettleMarket: ISignalsCore.MarketStruct = {
+    const earlySettleMarket: IIcicleOptionsCore.MarketStruct = {
       isSeeded: m.isSeeded,
       settled: true,
       snapshotChunksDone: m.snapshotChunksDone,
@@ -269,7 +269,7 @@ describe("TradeModule flow (minimal parity)", () => {
     // Claim gating is time-based (settlementTimestamp + Δ_claim).
     const m2 = await core.markets(1);
     const pastTime = m2.endTimestamp - 1000n;
-    const claimableMarket: ISignalsCore.MarketStruct = {
+    const claimableMarket: IIcicleOptionsCore.MarketStruct = {
       isSeeded: m2.isSeeded,
       settled: m2.settled,
       snapshotChunksDone: m2.snapshotChunksDone,
@@ -308,7 +308,7 @@ describe("TradeModule flow (minimal parity)", () => {
       await core.module()
     )) as unknown as TradeModule;
     const m = await core.markets(1);
-    const feeMarket: ISignalsCore.MarketStruct = {
+    const feeMarket: IIcicleOptionsCore.MarketStruct = {
       isSeeded: m.isSeeded,
       settled: m.settled,
       snapshotChunksDone: m.snapshotChunksDone,

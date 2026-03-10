@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { time } from "@nomicfoundation/hardhat-network-helpers";
 import { deploySeedData } from "../../helpers";
-import { SignalsCoreHarness, SignalsCore, SignalsUSDToken, MockSignalsPosition, MockFeePolicy, MarketLifecycleModule, RiskModule } from '../../../typechain-types';
+import { IcicleOptionsCoreHarness, IcicleOptionsCore, IcicleOptionsUSDToken, MockIcicleOptionsPosition, MockFeePolicy, MarketLifecycleModule, RiskModule } from '../../../typechain-types';
 
 /**
  * α Safety Bound Enforcement Integration Test
@@ -15,9 +15,9 @@ import { SignalsCoreHarness, SignalsCore, SignalsUSDToken, MockSignalsPosition, 
  */
 
 describe("α Safety Bound Enforcement (Integration)", () => {
-  let core: SignalsCoreHarness;
-  let payment: SignalsUSDToken;
-  let position: MockSignalsPosition;
+  let core: IcicleOptionsCoreHarness;
+  let payment: IcicleOptionsUSDToken;
+  let position: MockIcicleOptionsPosition;
   let lifecycle: MarketLifecycleModule;
   let risk: RiskModule;
   let feePolicy: MockFeePolicy;
@@ -30,10 +30,10 @@ describe("α Safety Bound Enforcement (Integration)", () => {
     trader = _trader;
 
     payment = await (
-      await ethers.getContractFactory("SignalsUSDToken")
+      await ethers.getContractFactory("IcicleOptionsUSDToken")
     ).deploy();
     position = await (
-      await ethers.getContractFactory("MockSignalsPosition")
+      await ethers.getContractFactory("MockIcicleOptionsPosition")
     ).deploy();
     feePolicy = await (
       await ethers.getContractFactory("MockFeePolicy")
@@ -46,7 +46,7 @@ describe("α Safety Bound Enforcement (Integration)", () => {
     ).deploy();
 
     const coreImpl = await (
-      await ethers.getContractFactory("SignalsCoreHarness", {
+      await ethers.getContractFactory("IcicleOptionsCoreHarness", {
         libraries: { LazyMulSegmentTree: lazyLib.target },
       })
     ).deploy();
@@ -73,7 +73,7 @@ describe("α Safety Bound Enforcement (Integration)", () => {
     ).deploy();
 
     const lpShareImpl = await (
-      await ethers.getContractFactory("SignalsLPShare")
+      await ethers.getContractFactory("IcicleOptionsLPShare")
     ).deploy();
     const proxyFactory = await ethers.getContractFactory("TestERC1967Proxy");
     const lpShareProxy = await proxyFactory.deploy(
@@ -82,19 +82,19 @@ describe("α Safety Bound Enforcement (Integration)", () => {
     );
     const coreProxy = await proxyFactory.deploy(coreImpl.target, "0x");
     const lpShare = await ethers.getContractAt(
-      "SignalsLPShare",
+      "IcicleOptionsLPShare",
       await lpShareProxy.getAddress()
     );
     core = (await ethers.getContractAt(
-      "SignalsCoreHarness",
+      "IcicleOptionsCoreHarness",
       await coreProxy.getAddress()
-    )) as SignalsCoreHarness;
+    )) as IcicleOptionsCoreHarness;
 
     const submitWindow = 120;
     const opsWindow = 60;
     const claimDelay = submitWindow + opsWindow;
     const feedId = ethers.encodeBytes32String("BTC");
-    const coreParams: SignalsCore.InitParamsStruct = {
+    const coreParams: IcicleOptionsCore.InitParamsStruct = {
       paymentToken: payment.target.toString(),
       positionContract: position.target.toString(),
       lpShareToken: await lpShare.getAddress(),
@@ -125,7 +125,7 @@ describe("α Safety Bound Enforcement (Integration)", () => {
     await lpShare.initialize(
       await core.getAddress(),
       payment.target.toString(),
-      "Signals LP Share",
+      "Icicle Options LP Share",
       "sLP",
       owner.address
     );

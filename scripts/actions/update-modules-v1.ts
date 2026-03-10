@@ -47,9 +47,9 @@ export async function updateModulesAction(env: Environment) {
   const [deployer] = await ethers.getSigners();
 
   const envData = loadEnvironment(env);
-  const coreProxyAddr = envData.contracts.SignalsCoreProxy;
+  const coreProxyAddr = envData.contracts.IcicleOptionsCoreProxy;
   if (!coreProxyAddr) {
-    throw new Error("Missing SignalsCoreProxy in environment file");
+    throw new Error("Missing IcicleOptionsCoreProxy in environment file");
   }
 
   const modulesToUpdate = parseModulesToUpdate();
@@ -117,7 +117,7 @@ export async function updateModulesAction(env: Environment) {
     vaultModuleAddr = vaultModule.target.toString();
   }
 
-  const core = await ethers.getContractAt("SignalsCore", coreProxyAddr);
+  const core = await ethers.getContractAt("IcicleOptionsCore", coreProxyAddr);
   const modulesTx = await core.setModules(
     tradeModuleAddr,
     lifecycleModuleAddr,

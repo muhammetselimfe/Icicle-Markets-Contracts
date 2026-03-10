@@ -15,7 +15,7 @@ const MARKET_ID = 7n;
 const SETTLEMENT_VALUE = 90432661822n; // 6 decimals
 
 async function main() {
-  const core = await hre.ethers.getContractAt("SignalsCore", env.contracts.SignalsCoreProxy);
+  const core = await hre.ethers.getContractAt("IcicleOptionsCore", env.contracts.IcicleOptionsCoreProxy);
   const before = await core.markets(MARKET_ID);
   console.log("[settle-secondary] before", {
     settled: before.settled,

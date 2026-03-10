@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import "./FixedPointMathU.sol";
 import "./FeeWaterfallLib.sol";
-import {SignalsErrors as SE} from "../errors/SignalsErrors.sol";
+import {IcicleOptionsErrors as SE} from "../errors/IcicleOptionsErrors.sol";
 
 /**
  * @title VaultAccountingLib

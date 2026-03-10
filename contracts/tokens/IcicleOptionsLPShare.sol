@@ -6,10 +6,10 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUp
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "../errors/SignalsErrors.sol";
+import "../errors/IcicleOptionsErrors.sol";
 
-/// @title SignalsLPShare
-/// @notice ERC-4626 compliant LP share token for Signals Protocol
+/// @title IcicleOptionsLPShare
+/// @notice ERC-4626 compliant LP share token for Icicle Options Protocol
 /// @dev Adapts async batch model to ERC-4626 interface
 ///
 ///      Key differences from standard ERC-4626:
@@ -17,24 +17,24 @@ import "../errors/SignalsErrors.sol";
 ///      - withdraw/redeem → requestWithdraw (returns 0, actual assets at claim)
 ///      - previewDeposit/previewRedeem → estimates at current batch price
 ///
-///      The vault is the SignalsCore contract which holds actual NAV.
+///      The vault is the IcicleOptionsCore contract which holds actual NAV.
 ///      This token represents claims on the vault.
-contract SignalsLPShare is
+contract IcicleOptionsLPShare is
     Initializable,
     ERC20Upgradeable,
     ERC20PermitUpgradeable,
     OwnableUpgradeable,
     UUPSUpgradeable,
-    SignalsErrors
+    IcicleOptionsErrors
 {
-    /// @notice The SignalsCore contract that manages the vault
+    /// @notice The IcicleOptionsCore contract that manages the vault
     address public core;
     
     /// @notice The underlying asset (payment token)
     address public asset;
 
     modifier onlyCore() {
-        if (msg.sender != core) revert SignalsErrors.OnlyCore();
+        if (msg.sender != core) revert IcicleOptionsErrors.OnlyCore();
         _;
     }
 
@@ -50,10 +50,10 @@ contract SignalsLPShare is
         string memory symbol_,
         address ownerSafe_
     ) external initializer {
-        if (core_ == address(0)) revert SignalsErrors.ZeroAddress();
-        if (asset_ == address(0)) revert SignalsErrors.ZeroAddress();
-        if (ownerSafe_ == address(0)) revert SignalsErrors.ZeroAddress();
-        if (core_.code.length == 0 || asset_.code.length == 0) revert SignalsErrors.ModuleNotSet();
+        if (core_ == address(0)) revert IcicleOptionsErrors.ZeroAddress();
+        if (asset_ == address(0)) revert IcicleOptionsErrors.ZeroAddress();
+        if (ownerSafe_ == address(0)) revert IcicleOptionsErrors.ZeroAddress();
+        if (core_.code.length == 0 || asset_.code.length == 0) revert IcicleOptionsErrors.ModuleNotSet();
         __ERC20_init(name_, symbol_);
         __ERC20Permit_init(name_);
         __Ownable_init(ownerSafe_);
@@ -142,22 +142,22 @@ contract SignalsLPShare is
 
     /// @notice Standard deposit not supported - use requestDeposit on Core
     function deposit(uint256, address) external pure returns (uint256) {
-        revert SignalsErrors.AsyncVaultUseRequestDeposit();
+        revert IcicleOptionsErrors.AsyncVaultUseRequestDeposit();
     }
 
     /// @notice Standard mint not supported - use requestDeposit on Core
     function mintShares(uint256, address) external pure returns (uint256) {
-        revert SignalsErrors.AsyncVaultUseRequestDeposit();
+        revert IcicleOptionsErrors.AsyncVaultUseRequestDeposit();
     }
 
     /// @notice Standard withdraw not supported - use requestWithdraw on Core
     function withdraw(uint256, address, address) external pure returns (uint256) {
-        revert SignalsErrors.AsyncVaultUseRequestWithdraw();
+        revert IcicleOptionsErrors.AsyncVaultUseRequestWithdraw();
     }
 
     /// @notice Standard redeem not supported - use requestWithdraw on Core
     function redeem(uint256, address, address) external pure returns (uint256) {
-        revert SignalsErrors.AsyncVaultUseRequestWithdraw();
+        revert IcicleOptionsErrors.AsyncVaultUseRequestWithdraw();
     }
 
     // ============================================================

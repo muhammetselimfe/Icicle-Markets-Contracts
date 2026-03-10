@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../core/SignalsCoreStorage.sol";
-import {SignalsErrors as SE} from "../errors/SignalsErrors.sol";
+import "../core/IcicleOptionsCoreStorage.sol";
+import {IcicleOptionsErrors as SE} from "../errors/IcicleOptionsErrors.sol";
 import "../lib/LazyMulSegmentTree.sol";
 import "../lib/FixedPointMathU.sol";
 import "../lib/ExposureDiffLib.sol";
@@ -10,7 +10,7 @@ import "../lib/TickBinLib.sol";
 import "../lib/SeedDataLib.sol";
 
 /// @notice Delegate-only lifecycle module (skeleton)
-contract MarketLifecycleModule is SignalsCoreStorage {
+contract MarketLifecycleModule is IcicleOptionsCoreStorage {
     using LazyMulSegmentTree for LazyMulSegmentTree.Tree;
     using FixedPointMathU for uint256;
 
@@ -114,7 +114,7 @@ contract MarketLifecycleModule is SignalsCoreStorage {
         marketId = ++nextMarketId;
         
         _registerMarketForBatch(batchId);
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         market.isSeeded = false;
         market.settled = false;
         market.snapshotChunksDone = false;
@@ -164,7 +164,7 @@ contract MarketLifecycleModule is SignalsCoreStorage {
     function seedNextChunks(uint256 marketId, uint32 count) external onlyDelegated {
         require(count != 0, SE.ZeroLimit());
 
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         require(_marketExists(marketId), SE.MarketNotFound(marketId));
         require(!market.isSeeded, SE.SeedAlreadyComplete(marketId));
         require(market.seedData != address(0), SE.ZeroAddress());
@@ -214,7 +214,7 @@ contract MarketLifecycleModule is SignalsCoreStorage {
      * @param marketId Market to finalize
      */
     function finalizePrimarySettlement(uint256 marketId) external onlyDelegated {
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         require(_marketExists(marketId), SE.MarketNotFound(marketId));
         require(!market.settled, SE.MarketAlreadySettled(marketId));
         require(!market.failed, SE.MarketAlreadyFailed(marketId));
@@ -271,7 +271,7 @@ contract MarketLifecycleModule is SignalsCoreStorage {
      * @param marketId Market to mark as failed
      */
     function markSettlementFailed(uint256 marketId) external onlyDelegated {
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         require(_marketExists(marketId), SE.MarketNotFound(marketId));
         require(!market.settled, SE.MarketAlreadySettled(marketId));
         require(!market.failed, SE.MarketAlreadyFailed(marketId));
@@ -314,7 +314,7 @@ contract MarketLifecycleModule is SignalsCoreStorage {
         uint256 marketId,
         int256 settlementValue
     ) external onlyDelegated {
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         require(_marketExists(marketId), SE.MarketNotFound(marketId));
         require(!market.settled, SE.MarketAlreadySettled(marketId));
         require(market.failed, SE.MarketNotFailed(marketId));
@@ -355,7 +355,7 @@ contract MarketLifecycleModule is SignalsCoreStorage {
         uint64 endTimestamp,
         uint64 settlementTimestamp
     ) external onlyDelegated {
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         require(_marketExists(marketId), SE.MarketNotFound(marketId));
         require(!market.settled, SE.MarketAlreadySettled(marketId));
         _validateTimeRange(startTimestamp, endTimestamp, settlementTimestamp);
@@ -391,7 +391,7 @@ contract MarketLifecycleModule is SignalsCoreStorage {
 
     function requestSettlementChunks(uint256 marketId, uint32 maxChunksPerTx) external onlyDelegated returns (uint32 emitted) {
         require(maxChunksPerTx != 0, SE.ZeroLimit());
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         require(_marketExists(marketId), SE.MarketNotFound(marketId));
         require(market.settled, SE.MarketNotSettled(marketId));
         require(!market.snapshotChunksDone, SE.SnapshotAlreadyCompleted());
@@ -499,7 +499,7 @@ contract MarketLifecycleModule is SignalsCoreStorage {
      * @return batchId Batch identifier (day-based)
      */
     function _getBatchIdForMarket(uint256 marketId) internal view returns (uint64) {
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         // Use settlement timestamp divided by day (PST day boundary)
         // This groups all markets settling on the same PST day into one batch (day-key)
         return _toBatchId(market.settlementTimestamp);
@@ -526,7 +526,7 @@ contract MarketLifecycleModule is SignalsCoreStorage {
      * @return ftot Gross fees collected during trading
      */
     function _calculateMarketPnl(uint256 marketId) internal view returns (int256 lt, uint256 ftot) {
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         LazyMulSegmentTree.Tree storage tree = marketTrees[marketId];
         
         uint256 alpha = market.liquidityParameter;
@@ -568,7 +568,7 @@ contract MarketLifecycleModule is SignalsCoreStorage {
         uint256 marketId,
         int256 settlementTick
     ) internal view returns (int256 lt, uint256 ftot, uint256 payoutReserve) {
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         LazyMulSegmentTree.Tree storage tree = marketTrees[marketId];
         
         uint256 alpha = market.liquidityParameter;

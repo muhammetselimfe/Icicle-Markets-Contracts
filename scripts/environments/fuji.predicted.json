@@ -1,0 +1,46 @@
+{
+  "network": "fuji",
+  "chainId": 43113,
+  "release": "v1",
+  "deployerEOA": "0xCd37EAb6b0eeffa3dC0b0f138ae57275a54Fc88d",
+  "create2Factory": "0xE0C6e0264DAd64654901A2466ADA26483A326760",
+  "contracts": {
+    "IcicleOptionsCreate2Factory": "0xE0C6e0264DAd64654901A2466ADA26483A326760",
+    "IcicleOptionsDeployer": "0xdA104D8c6d97fEe2e95Fe60C9D5a5bB7f85FD1D3",
+    "IcicleOptionsCoreProxy": "0x5163b4aB77650D1D937a5c5E6B0d012e4659546e",
+    "IcicleOptionsPositionProxy": "0x3FD90718b2aA7D15417d1d494b653c7EF44dff70",
+    "IcicleOptionsLPShareProxy": "0xf8Ea96283fA5726fb64f3C57695a333Ce007B56a",
+    "IcicleOptionsLPShare": "0xf8Ea96283fA5726fb64f3C57695a333Ce007B56a",
+    "IcicleOptionsCoreImplementation": "0x4801835D663d2bC850D190839BB67dAD01a94fC4",
+    "IcicleOptionsPositionImplementation": "0x5a2dAAdB2d032d9c203162ca5Aa12869690fb522",
+    "IcicleOptionsLPShareImplementation": "0x3B6DF25399F47f11FAD4b30F43787805FC802049"
+  },
+  "create2": {
+    "vanityPrefix": "0x516",
+    "maxNonce": 1000000,
+    "salts": {
+      "DEPLOYER": {
+        "nonce": 0,
+        "salt": "0xe5b218341b1353d6782b295fb2dad7b3ff2077bbfb48d6a9d5910c86107b8653"
+      },
+      "CORE_PROXY": {
+        "nonce": 8859,
+        "salt": "0xe2a2ef70cf7bd011eb653f372e75dc73e2c87ce34ff73b6470d6e910ae1f3eac"
+      },
+      "POSITION_PROXY": {
+        "nonce": 0,
+        "salt": "0x913096d3e69bda3c5004e6da206d5bd0dd9a09fa0c1b28b10c76afc4b8ec9ad7"
+      },
+      "LPSHARE_PROXY": {
+        "nonce": 0,
+        "salt": "0xdb6b618eabeb7d5a9a3a5a4fbc2c1095c67b5dabf1d82bd2889a99ba40a93b79"
+      }
+    },
+    "initCodeHash": {
+      "DEPLOYER": "0x7b9f494a7b06c5e566799c2267ca11f7fdd28f1b9a3a70dce53b9be4142c7552",
+      "CORE_PROXY": "0x7ba320a294190d1ddb2ddb5ca96b074f24892d2259b4b85a972d8e9499196d94",
+      "POSITION_PROXY": "0xb7db22739b031d23dc6a1d954597021c5555f4992f4ad8148e9471c0bf6cb3b4",
+      "LPSHARE_PROXY": "0x19d3178c13ce913ebee851c392109220bbc56c875b0f9f06ac9dd6240e882280"
+    }
+  }
+}

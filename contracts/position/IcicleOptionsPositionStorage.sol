@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../interfaces/ISignalsPosition.sol";
+import "../interfaces/IIcicleOptionsPosition.sol";
 
-abstract contract SignalsPositionStorage {
+abstract contract IcicleOptionsPositionStorage {
     address public core;
     uint256 internal _nextId;
-    mapping(uint256 => ISignalsPosition.Position) internal _positions;
+    mapping(uint256 => IIcicleOptionsPosition.Position) internal _positions;
     mapping(uint256 => uint256[]) internal _marketTokenList;
     mapping(uint256 => uint256) internal _positionMarketIndex;
     mapping(address => uint256[]) internal _ownerTokenList;

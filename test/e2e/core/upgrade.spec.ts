@@ -57,22 +57,22 @@ describe("E2E: UUPS upgrades", () => {
 
     const [positionId] = await position.getPositionsByOwner(trader.address);
 
-    const coreV2Impl = await (await ethers.getContractFactory("SignalsCoreV2")).deploy();
+    const coreV2Impl = await (await ethers.getContractFactory("IcicleOptionsCoreV2")).deploy();
     const coreUpgrader = await ethers.getContractAt(
       ["function upgradeToAndCall(address newImplementation, bytes data) external payable"],
       coreAddress
     );
     await (coreUpgrader as any).connect(owner).upgradeToAndCall(coreV2Impl.target, "0x");
-    const coreV2 = await ethers.getContractAt("SignalsCoreV2", coreAddress);
+    const coreV2 = await ethers.getContractAt("IcicleOptionsCoreV2", coreAddress);
     expect(await coreV2.version()).to.equal("v2");
 
-    const positionV2Impl = await (await ethers.getContractFactory("SignalsPositionV2")).deploy();
+    const positionV2Impl = await (await ethers.getContractFactory("IcicleOptionsPositionV2")).deploy();
     const positionUpgrader = await ethers.getContractAt(
       ["function upgradeToAndCall(address newImplementation, bytes data) external payable"],
       positionAddress
     );
     await (positionUpgrader as any).connect(owner).upgradeToAndCall(positionV2Impl.target, "0x");
-    const positionV2 = await ethers.getContractAt("SignalsPositionV2", positionAddress);
+    const positionV2 = await ethers.getContractAt("IcicleOptionsPositionV2", positionAddress);
     expect(await positionV2.version()).to.equal("v2");
 
     expect(await position.exists(positionId)).to.equal(true);

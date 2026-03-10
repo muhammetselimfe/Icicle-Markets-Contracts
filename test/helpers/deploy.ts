@@ -1,13 +1,13 @@
 import { ethers } from "hardhat";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import {
-  SignalsUSDToken,
+  IcicleOptionsUSDToken,
   MockFeePolicy,
   TradeModuleProxy,
   TradeModule,
-  SignalsPosition,
+  IcicleOptionsPosition,
 } from "../../typechain-types";
-import { ISignalsCore } from "../../typechain-types/contracts/testonly/TradeModuleProxy";
+import { IIcicleOptionsCore } from "../../typechain-types/contracts/testonly/TradeModuleProxy";
 import { WAD, USDC_DECIMALS } from "./constants";
 
 // ============================================================
@@ -17,8 +17,8 @@ import { WAD, USDC_DECIMALS } from "./constants";
 export interface TradeModuleSystem {
   owner: HardhatEthersSigner;
   users: HardhatEthersSigner[];
-  payment: SignalsUSDToken;
-  position: SignalsPosition;
+  payment: IcicleOptionsUSDToken;
+  position: IcicleOptionsPosition;
   feePolicy: MockFeePolicy;
   tradeModule: TradeModule;
   core: TradeModuleProxy;
@@ -75,10 +75,10 @@ export async function deployTradeModuleSystem(
   const owner = signers[0];
   const users = signers.slice(1, 1 + (opts.userCount ?? 5));
 
-  // Deploy SignalsUSDToken
+  // Deploy IcicleOptionsUSDToken
   const payment = (await (
-    await ethers.getContractFactory("SignalsUSDToken")
-  ).deploy()) as SignalsUSDToken;
+    await ethers.getContractFactory("IcicleOptionsUSDToken")
+  ).deploy()) as IcicleOptionsUSDToken;
 
   // Deploy MockFeePolicy
   const feePolicy = (await (
@@ -104,8 +104,8 @@ export async function deployTradeModuleSystem(
     })
   ).deploy(tradeModule.target)) as TradeModuleProxy;
 
-  // Deploy SignalsPosition with UUPS proxy (core address known now)
-  const positionImplFactory = await ethers.getContractFactory("SignalsPosition");
+  // Deploy IcicleOptionsPosition with UUPS proxy (core address known now)
+  const positionImplFactory = await ethers.getContractFactory("IcicleOptionsPosition");
   const positionImpl = await positionImplFactory.deploy();
   await positionImpl.waitForDeployment();
   const positionInit = positionImplFactory.interface.encodeFunctionData(
@@ -116,9 +116,9 @@ export async function deployTradeModuleSystem(
     await ethers.getContractFactory("TestERC1967Proxy")
   ).deploy(positionImpl.target, positionInit);
   const position = (await ethers.getContractAt(
-    "SignalsPosition",
+    "IcicleOptionsPosition",
     await positionProxy.getAddress()
-  )) as SignalsPosition;
+  )) as IcicleOptionsPosition;
 
   // Configure addresses
   await core.setAddresses(
@@ -135,7 +135,7 @@ export async function deployTradeModuleSystem(
   for (let i = 0; i < markets.length; i++) {
     const marketId = i + 1;
     const config = markets[i];
-    const market: ISignalsCore.MarketStruct = {
+    const market: IIcicleOptionsCore.MarketStruct = {
       isSeeded: true,
       settled: false,
       snapshotChunksDone: false,
@@ -283,10 +283,10 @@ export async function deployTradeModuleTestEnv() {
   const [owner, user] = await ethers.getSigners();
 
   const payment = await (
-    await ethers.getContractFactory("SignalsUSDToken")
+    await ethers.getContractFactory("IcicleOptionsUSDToken")
   ).deploy();
 
-  const positionImplFactory = await ethers.getContractFactory("SignalsPosition");
+  const positionImplFactory = await ethers.getContractFactory("IcicleOptionsPosition");
   const positionImpl = await positionImplFactory.deploy();
   await positionImpl.waitForDeployment();
   const positionInit = positionImplFactory.interface.encodeFunctionData(
@@ -297,7 +297,7 @@ export async function deployTradeModuleTestEnv() {
     await ethers.getContractFactory("TestERC1967Proxy")
   ).deploy(positionImpl.target, positionInit);
   const position = await ethers.getContractAt(
-    "SignalsPosition",
+    "IcicleOptionsPosition",
     await positionProxy.getAddress()
   );
 

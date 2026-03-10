@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../core/SignalsCoreStorage.sol";
+import "../core/IcicleOptionsCoreStorage.sol";
 import "../modules/LPVaultModule.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * @notice Test harness to delegate calls to LPVaultModule
  * @dev Provides storage context for delegate calls
  */
-contract LPVaultModuleProxy is SignalsCoreStorage {
+contract LPVaultModuleProxy is IcicleOptionsCoreStorage {
     address public module;
 
     constructor(address _module) {

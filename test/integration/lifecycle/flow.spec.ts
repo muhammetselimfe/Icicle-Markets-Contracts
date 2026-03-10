@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { time } from "@nomicfoundation/hardhat-network-helpers";
-import { MarketLifecycleModule, OracleModule, TradeModule, SignalsCoreHarness, SignalsCore, SignalsPosition, SignalsLPShare, TestERC1967Proxy, MockFeePolicy, LPVaultModule } from '../../../typechain-types';
+import { MarketLifecycleModule, OracleModule, TradeModule, IcicleOptionsCoreHarness, IcicleOptionsCore, IcicleOptionsPosition, IcicleOptionsLPShare, TestERC1967Proxy, MockFeePolicy, LPVaultModule } from '../../../typechain-types';
 import {
   DATA_FEED_ID,
   FEED_DECIMALS,
@@ -28,9 +28,9 @@ describe("Lifecycle + Trade integration", () => {
   async function setup() {
     const [owner, user] = await ethers.getSigners();
     const payment = await (
-      await ethers.getContractFactory("SignalsUSDToken")
+      await ethers.getContractFactory("IcicleOptionsUSDToken")
     ).deploy();
-    const positionImplFactory = await ethers.getContractFactory("SignalsPosition");
+    const positionImplFactory = await ethers.getContractFactory("IcicleOptionsPosition");
     const positionImpl = await positionImplFactory.deploy();
     await positionImpl.waitForDeployment();
     const lazyLib = await (
@@ -59,14 +59,14 @@ describe("Lifecycle + Trade integration", () => {
     ).deploy()) as LPVaultModule;
 
     const coreImpl = (await (
-      await ethers.getContractFactory("SignalsCoreHarness", {
+      await ethers.getContractFactory("IcicleOptionsCoreHarness", {
         libraries: { LazyMulSegmentTree: lazyLib.target },
       })
-    ).deploy()) as SignalsCoreHarness;
+    ).deploy()) as IcicleOptionsCoreHarness;
     const submitWindow = 300;
     const opsWindow = 60;
     const claimDelay = submitWindow + opsWindow;
-    const lpShareImpl = await (await ethers.getContractFactory("SignalsLPShare")).deploy();
+    const lpShareImpl = await (await ethers.getContractFactory("IcicleOptionsLPShare")).deploy();
 
     const proxyFactory = await ethers.getContractFactory("TestERC1967Proxy");
     const positionProxy = (await proxyFactory.deploy(positionImpl.target, "0x")) as TestERC1967Proxy;
@@ -74,23 +74,23 @@ describe("Lifecycle + Trade integration", () => {
     const coreProxy = (await proxyFactory.deploy(coreImpl.target, "0x")) as TestERC1967Proxy;
 
     const position = (await ethers.getContractAt(
-      "SignalsPosition",
+      "IcicleOptionsPosition",
       await positionProxy.getAddress()
-    )) as SignalsPosition;
+    )) as IcicleOptionsPosition;
     const lpShare = (await ethers.getContractAt(
-      "SignalsLPShare",
+      "IcicleOptionsLPShare",
       await lpShareProxy.getAddress()
-    )) as SignalsLPShare;
+    )) as IcicleOptionsLPShare;
     const core = (await ethers.getContractAt(
-      "SignalsCoreHarness",
+      "IcicleOptionsCoreHarness",
       await coreProxy.getAddress()
-    )) as SignalsCoreHarness;
+    )) as IcicleOptionsCoreHarness;
 
     const feePolicy = (await (
       await ethers.getContractFactory("MockFeePolicy")
     ).deploy(0)) as MockFeePolicy;
 
-    const coreParams: SignalsCore.InitParamsStruct = {
+    const coreParams: IcicleOptionsCore.InitParamsStruct = {
       paymentToken: payment.target.toString(),
       positionContract: await position.getAddress(),
       lpShareToken: await lpShare.getAddress(),
@@ -122,8 +122,8 @@ describe("Lifecycle + Trade integration", () => {
     await lpShare.initialize(
       await core.getAddress(),
       payment.target.toString(),
-      "Signals LP",
-      "SIGLP",
+      "Icicle Options LP",
+      "ICOLP",
       owner.address
     );
 

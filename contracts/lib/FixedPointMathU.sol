@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {UD60x18, ud, unwrap, exp, ln} from "@prb/math/src/UD60x18.sol";
-import {SignalsErrors as SE} from "../errors/SignalsErrors.sol";
+import {IcicleOptionsErrors as SE} from "../errors/IcicleOptionsErrors.sol";
 
 /// @notice Fixed-point math utilities (WAD = 1e18) with 512-bit safe arithmetic.
 /// @dev Uses OpenZeppelin Math.mulDiv for overflow-safe multiplication/division.

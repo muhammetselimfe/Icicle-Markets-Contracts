@@ -4,7 +4,7 @@ import {
   time,
   loadFixture,
 } from "@nomicfoundation/hardhat-toolbox/network-helpers";
-import { SignalsCore } from '../../typechain-types';
+import { IcicleOptionsCore } from '../../typechain-types';
 import { WAD, USDC_DECIMALS, SMALL_QUANTITY } from "../helpers/constants";
 import {
   buildRedstonePayload,
@@ -29,7 +29,7 @@ describe("Escrow Security", () => {
     const [owner, user1, user2] = await ethers.getSigners();
 
     const payment = await (
-      await ethers.getContractFactory("SignalsUSDToken")
+      await ethers.getContractFactory("IcicleOptionsUSDToken")
     ).deploy();
     const fundAmount = ethers.parseUnits("1000000", USDC_DECIMALS);
     await payment.transfer(user1.address, fundAmount);
@@ -64,15 +64,15 @@ describe("Escrow Security", () => {
     ).deploy();
 
     const coreImpl = await (
-      await ethers.getContractFactory("SignalsCoreHarness", {
+      await ethers.getContractFactory("IcicleOptionsCoreHarness", {
         libraries: { LazyMulSegmentTree: lazyLib.target },
       })
     ).deploy();
     const positionImpl = await (
-      await ethers.getContractFactory("SignalsPosition")
+      await ethers.getContractFactory("IcicleOptionsPosition")
     ).deploy();
     const lpShareImpl = await (
-      await ethers.getContractFactory("SignalsLPShare")
+      await ethers.getContractFactory("IcicleOptionsLPShare")
     ).deploy();
     const proxyFactory = await ethers.getContractFactory("TestERC1967Proxy");
     const positionProxy = await proxyFactory.deploy(positionImpl.target, "0x");
@@ -80,15 +80,15 @@ describe("Escrow Security", () => {
     const coreProxy = await proxyFactory.deploy(coreImpl.target, "0x");
 
     const position = await ethers.getContractAt(
-      "SignalsPosition",
+      "IcicleOptionsPosition",
       await positionProxy.getAddress()
     );
     const lpShare = await ethers.getContractAt(
-      "SignalsLPShare",
+      "IcicleOptionsLPShare",
       await lpShareProxy.getAddress()
     );
     const core = await ethers.getContractAt(
-      "SignalsCoreHarness",
+      "IcicleOptionsCoreHarness",
       await coreProxy.getAddress()
     );
 
@@ -96,7 +96,7 @@ describe("Escrow Security", () => {
     const submitWindow = 3600;
     const opsWindow = 3600;
     const claimDelay = submitWindow + opsWindow;
-    const coreParams: SignalsCore.InitParamsStruct = {
+    const coreParams: IcicleOptionsCore.InitParamsStruct = {
       paymentToken: payment.target.toString(),
       positionContract: await position.getAddress(),
       lpShareToken: await lpShare.getAddress(),
@@ -128,7 +128,7 @@ describe("Escrow Security", () => {
     await lpShare.initialize(
       await core.getAddress(),
       payment.target.toString(),
-      "Signals LP Share",
+      "Icicle Options LP Share",
       "sLP",
       owner.address
     );

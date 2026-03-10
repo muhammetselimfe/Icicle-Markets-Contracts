@@ -1,8 +1,8 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
-import { SignalsPosition } from "../../typechain-types";
-import { ISignalsCore } from "../../typechain-types/contracts/testonly/TradeModuleProxy";
+import { IcicleOptionsPosition } from "../../typechain-types";
+import { IIcicleOptionsCore } from "../../typechain-types/contracts/testonly/TradeModuleProxy";
 import { WAD, USDC_DECIMALS, SMALL_QUANTITY } from "../helpers/constants";
 
 /**
@@ -20,7 +20,7 @@ describe("Core Security", () => {
 
     // Deploy with owner who gets initial supply
     const payment = await (
-      await ethers.getContractFactory("SignalsUSDToken")
+      await ethers.getContractFactory("IcicleOptionsUSDToken")
     ).deploy();
 
     // Transfer from deployer to users
@@ -48,7 +48,7 @@ describe("Core Security", () => {
     ).deploy(tradeModule.target);
 
     const positionImplFactory = await ethers.getContractFactory(
-      "SignalsPosition"
+      "IcicleOptionsPosition"
     );
     const positionImpl = await positionImplFactory.deploy();
     await positionImpl.waitForDeployment();
@@ -60,9 +60,9 @@ describe("Core Security", () => {
       await ethers.getContractFactory("TestERC1967Proxy")
     ).deploy(positionImpl.target, positionInit);
     const position = (await ethers.getContractAt(
-      "SignalsPosition",
+      "IcicleOptionsPosition",
       await positionProxy.getAddress()
-    )) as SignalsPosition;
+    )) as IcicleOptionsPosition;
 
     await core.setAddresses(
       payment.target,
@@ -73,7 +73,7 @@ describe("Core Security", () => {
 
     // Create active market
     const now = (await ethers.provider.getBlock("latest"))!.timestamp;
-    const market: ISignalsCore.MarketStruct = {
+    const market: IIcicleOptionsCore.MarketStruct = {
       isSeeded: true,
       settled: false,
       snapshotChunksDone: false,

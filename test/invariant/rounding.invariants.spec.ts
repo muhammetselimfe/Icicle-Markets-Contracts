@@ -2,9 +2,9 @@ import { ethers } from "hardhat";
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import {
-  SignalsPosition,
+  IcicleOptionsPosition,
 } from "../../typechain-types";
-import { ISignalsCore } from "../../typechain-types/contracts/testonly/TradeModuleProxy";
+import { IIcicleOptionsCore } from "../../typechain-types/contracts/testonly/TradeModuleProxy";
 import { WAD, USDC_DECIMALS, SMALL_QUANTITY, MEDIUM_QUANTITY } from "../helpers/constants";
 
 /**
@@ -25,7 +25,7 @@ describe("Rounding Invariants", () => {
     const [owner, user] = await ethers.getSigners();
 
     const payment = await (
-      await ethers.getContractFactory("SignalsUSDToken")
+      await ethers.getContractFactory("IcicleOptionsUSDToken")
     ).deploy();
 
     const feePolicy = await (
@@ -47,7 +47,7 @@ describe("Rounding Invariants", () => {
       })
     ).deploy(tradeModule.target);
 
-    const positionImplFactory = await ethers.getContractFactory("SignalsPosition");
+    const positionImplFactory = await ethers.getContractFactory("IcicleOptionsPosition");
     const positionImpl = await positionImplFactory.deploy();
     await positionImpl.waitForDeployment();
     const positionInit = positionImplFactory.interface.encodeFunctionData(
@@ -58,9 +58,9 @@ describe("Rounding Invariants", () => {
       await ethers.getContractFactory("TestERC1967Proxy")
     ).deploy(positionImpl.target, positionInit);
     const position = (await ethers.getContractAt(
-      "SignalsPosition",
+      "IcicleOptionsPosition",
       await positionProxy.getAddress()
-    )) as SignalsPosition;
+    )) as IcicleOptionsPosition;
 
     await core.setAddresses(
       payment.target,
@@ -70,7 +70,7 @@ describe("Rounding Invariants", () => {
     );
 
     const now = (await ethers.provider.getBlock("latest"))!.timestamp;
-    const market: ISignalsCore.MarketStruct = {
+    const market: IIcicleOptionsCore.MarketStruct = {
       isSeeded: true,
       settled: false,
       snapshotChunksDone: false,

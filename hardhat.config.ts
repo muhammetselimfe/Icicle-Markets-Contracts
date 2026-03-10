@@ -34,6 +34,7 @@ const hardhatAccountCount = Number.parseInt(
 const defaultDevRpc = "https://rpc.testnet.citrea.xyz";
 const devRpc = process.env.DEV_RPC_URL || defaultDevRpc;
 const prodRpc = process.env.PROD_RPC_URL || "https://rpc.mainnet.citrea.xyz";
+const fujiRpc = process.env.FUJI_RPC_URL || "https://api.avax-test.network/ext/bc/C/rpc";
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -83,11 +84,17 @@ const config: HardhatUserConfig = {
       chainId: 4114,
       accounts: defaultAccounts,
     },
+    fuji: {
+      url: fujiRpc,
+      chainId: 43113,
+      accounts: defaultAccounts,
+    },
   },
   etherscan: {
     apiKey: {
       "dev": process.env.BLOCKSCOUT_API_KEY || "placeholder",
       "prod": process.env.BLOCKSCOUT_API_KEY || "placeholder",
+      "fuji": process.env.SNOWSCAN_API_KEY || "placeholder",
     },
     customChains: [
       {
@@ -104,6 +111,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://explorer.mainnet.citrea.xyz/api",
           browserURL: "https://explorer.mainnet.citrea.xyz",
+        },
+      },
+      {
+        network: "fuji",
+        chainId: 43113,
+        urls: {
+          apiURL: "https://api-testnet.snowscan.xyz/api",
+          browserURL: "https://testnet.snowscan.xyz",
         },
       },
     ],

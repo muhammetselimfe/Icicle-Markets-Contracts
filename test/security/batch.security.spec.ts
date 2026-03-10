@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { time, loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
-import { SignalsCore } from '../../typechain-types';
+import { IcicleOptionsCore } from '../../typechain-types';
 import { deploySeedData } from "../helpers";
 import { USDC_DECIMALS, batchEndTimestamp, batchStartTimestamp, uniformFactors } from "../helpers/constants";
 
@@ -16,7 +16,7 @@ describe("Batch Processing Security", () => {
   async function deployBatchFixture() {
     const [owner, user1, user2] = await ethers.getSigners();
 
-    const payment = await (await ethers.getContractFactory("SignalsUSDToken")).deploy();
+    const payment = await (await ethers.getContractFactory("IcicleOptionsUSDToken")).deploy();
     const fundAmount = ethers.parseUnits("1000000", USDC_DECIMALS);
     await payment.transfer(user1.address, fundAmount);
     await payment.transfer(user2.address, fundAmount);
@@ -32,24 +32,24 @@ describe("Batch Processing Security", () => {
     const lpVaultModule = await (await ethers.getContractFactory("LPVaultModule")).deploy();
     const riskModule = await (await ethers.getContractFactory("RiskModule")).deploy();
 
-    const coreImpl = await (await ethers.getContractFactory("SignalsCoreHarness", {
+    const coreImpl = await (await ethers.getContractFactory("IcicleOptionsCoreHarness", {
       libraries: { LazyMulSegmentTree: lazyLib.target }
     })).deploy();
-    const positionImpl = await (await ethers.getContractFactory("SignalsPosition")).deploy();
-    const lpShareImpl = await (await ethers.getContractFactory("SignalsLPShare")).deploy();
+    const positionImpl = await (await ethers.getContractFactory("IcicleOptionsPosition")).deploy();
+    const lpShareImpl = await (await ethers.getContractFactory("IcicleOptionsLPShare")).deploy();
     const proxyFactory = await ethers.getContractFactory("TestERC1967Proxy");
     const positionProxy = await proxyFactory.deploy(positionImpl.target, "0x");
     const lpShareProxy = await proxyFactory.deploy(lpShareImpl.target, "0x");
     const coreProxy = await proxyFactory.deploy(coreImpl.target, "0x");
-    const position = await ethers.getContractAt("SignalsPosition", await positionProxy.getAddress());
-    const lpShare = await ethers.getContractAt("SignalsLPShare", await lpShareProxy.getAddress());
-    const core = await ethers.getContractAt("SignalsCoreHarness", await coreProxy.getAddress());
+    const position = await ethers.getContractAt("IcicleOptionsPosition", await positionProxy.getAddress());
+    const lpShare = await ethers.getContractAt("IcicleOptionsLPShare", await lpShareProxy.getAddress());
+    const core = await ethers.getContractAt("IcicleOptionsCoreHarness", await coreProxy.getAddress());
 
     const feedId = ethers.encodeBytes32String("BTC");
     const submitWindow = 3600;
     const opsWindow = 3600;
     const claimDelay = submitWindow + opsWindow;
-    const coreParams: SignalsCore.InitParamsStruct = {
+    const coreParams: IcicleOptionsCore.InitParamsStruct = {
       paymentToken: payment.target.toString(),
       positionContract: await position.getAddress(),
       lpShareToken: await lpShare.getAddress(),
@@ -81,7 +81,7 @@ describe("Batch Processing Security", () => {
     await lpShare.initialize(
       await core.getAddress(),
       payment.target.toString(),
-      "Signals LP Share",
+      "Icicle Options LP Share",
       "sLP",
       owner.address
     );
@@ -133,7 +133,7 @@ describe("Batch Processing Security", () => {
       expect(await core.currentBatchId()).to.equal(nextBatchId);
       expect(await core.getVaultNav()).to.equal(navBefore);
       expect(await core.getVaultShares()).to.equal(sharesBefore);
-      // SignalsCore.getDailyPnl is not a view fn (delegatecall-based), so use staticCall.
+      // IcicleOptionsCore.getDailyPnl is not a view fn (delegatecall-based), so use staticCall.
       const [, , , , , , processed] = await core.getDailyPnl.staticCall(nextBatchId);
       expect(processed).to.equal(true);
     });

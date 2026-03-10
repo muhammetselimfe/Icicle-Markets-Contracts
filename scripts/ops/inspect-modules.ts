@@ -12,7 +12,7 @@ const envPath = path.resolve(__dirname, `../environments/${envName}.json`);
 const env = JSON.parse(fs.readFileSync(envPath, "utf8"));
 
 async function main() {
-  const core = await hre.ethers.getContractAt("SignalsCore", env.contracts.SignalsCoreProxy);
+  const core = await hre.ethers.getContractAt("IcicleOptionsCore", env.contracts.IcicleOptionsCoreProxy);
   const out = {
     network: hre.network.name,
     core: await core.getAddress(),

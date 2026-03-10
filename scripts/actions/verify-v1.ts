@@ -30,68 +30,68 @@ export async function verifyAction(env: Environment) {
   const paymentTokenAddress = envData.contracts.PaymentToken;
   const paymentTokenVerifyContract =
     envData.config?.paymentTokenVerifyContract ?? process.env.PAYMENT_TOKEN_VERIFY_CONTRACT;
-  if (!paymentTokenAddress && (envData.contracts.SignalsCoreImplementation || envData.contracts.SignalsCoreProxy)) {
+  if (!paymentTokenAddress && (envData.contracts.IcicleOptionsCoreImplementation || envData.contracts.IcicleOptionsCoreProxy)) {
     missing.push("PaymentToken address");
   }
   const deployerEOA = envData.config?.deployerEOA ?? process.env.DEPLOYER_EOA;
-  if (!deployerEOA && (envData.contracts.SignalsCreate2Factory || envData.contracts.SignalsDeployer)) {
-    missing.push("deployerEOA (for SignalsCreate2Factory / SignalsDeployer)");
+  if (!deployerEOA && (envData.contracts.IcicleOptionsCreate2Factory || envData.contracts.IcicleOptionsDeployer)) {
+    missing.push("deployerEOA (for IcicleOptionsCreate2Factory / IcicleOptionsDeployer)");
   }
-  const coreImpl = envData.contracts.SignalsCoreImplementation;
-  const positionImpl = envData.contracts.SignalsPositionImplementation;
-  const lpShareImpl = envData.contracts.SignalsLPShareImplementation;
+  const coreImpl = envData.contracts.IcicleOptionsCoreImplementation;
+  const positionImpl = envData.contracts.IcicleOptionsPositionImplementation;
+  const lpShareImpl = envData.contracts.IcicleOptionsLPShareImplementation;
   const proxyContract = "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy";
-  if (envData.contracts.SignalsCoreProxy && !coreImpl) {
-    missing.push("SignalsCoreImplementation (for SignalsCoreProxy)");
+  if (envData.contracts.IcicleOptionsCoreProxy && !coreImpl) {
+    missing.push("IcicleOptionsCoreImplementation (for IcicleOptionsCoreProxy)");
   }
-  if (envData.contracts.SignalsPositionProxy && !positionImpl) {
-    missing.push("SignalsPositionImplementation (for SignalsPositionProxy)");
+  if (envData.contracts.IcicleOptionsPositionProxy && !positionImpl) {
+    missing.push("IcicleOptionsPositionImplementation (for IcicleOptionsPositionProxy)");
   }
-  if (envData.contracts.SignalsLPShareProxy && !lpShareImpl) {
-    missing.push("SignalsLPShareImplementation (for SignalsLPShareProxy)");
+  if (envData.contracts.IcicleOptionsLPShareProxy && !lpShareImpl) {
+    missing.push("IcicleOptionsLPShareImplementation (for IcicleOptionsLPShareProxy)");
   }
 
   const targets: VerifyTarget[] = [
     {
-      name: "SignalsCoreImplementation",
+      name: "IcicleOptionsCoreImplementation",
       address: coreImpl,
-      contract: "contracts/core/SignalsCore.sol:SignalsCore",
+      contract: "contracts/core/IcicleOptionsCore.sol:IcicleOptionsCore",
     },
     {
-      name: "SignalsPositionImplementation",
+      name: "IcicleOptionsPositionImplementation",
       address: positionImpl,
-      contract: "contracts/position/SignalsPosition.sol:SignalsPosition",
+      contract: "contracts/position/IcicleOptionsPosition.sol:IcicleOptionsPosition",
     },
     {
-      name: "SignalsLPShareImplementation",
+      name: "IcicleOptionsLPShareImplementation",
       address: lpShareImpl,
-      contract: "contracts/tokens/SignalsLPShare.sol:SignalsLPShare",
+      contract: "contracts/tokens/IcicleOptionsLPShare.sol:IcicleOptionsLPShare",
     },
-    ...(envData.contracts.SignalsCoreProxy
+    ...(envData.contracts.IcicleOptionsCoreProxy
       ? [
           {
-            name: "SignalsCoreProxy",
-            address: envData.contracts.SignalsCoreProxy,
+            name: "IcicleOptionsCoreProxy",
+            address: envData.contracts.IcicleOptionsCoreProxy,
             contract: proxyContract,
             constructorArguments: coreImpl ? [coreImpl, "0x"] : undefined,
           },
         ]
       : []),
-    ...(envData.contracts.SignalsPositionProxy
+    ...(envData.contracts.IcicleOptionsPositionProxy
       ? [
           {
-            name: "SignalsPositionProxy",
-            address: envData.contracts.SignalsPositionProxy,
+            name: "IcicleOptionsPositionProxy",
+            address: envData.contracts.IcicleOptionsPositionProxy,
             contract: proxyContract,
             constructorArguments: positionImpl ? [positionImpl, "0x"] : undefined,
           },
         ]
       : []),
-    ...(envData.contracts.SignalsLPShareProxy
+    ...(envData.contracts.IcicleOptionsLPShareProxy
       ? [
           {
-            name: "SignalsLPShareProxy",
-            address: envData.contracts.SignalsLPShareProxy,
+            name: "IcicleOptionsLPShareProxy",
+            address: envData.contracts.IcicleOptionsLPShareProxy,
             contract: proxyContract,
             constructorArguments: lpShareImpl ? [lpShareImpl, "0x"] : undefined,
           },
@@ -102,22 +102,22 @@ export async function verifyAction(env: Environment) {
       address: envData.contracts.LazyMulSegmentTree,
       contract: "contracts/lib/LazyMulSegmentTree.sol:LazyMulSegmentTree",
     },
-    ...(envData.contracts.SignalsCreate2Factory && deployerEOA
+    ...(envData.contracts.IcicleOptionsCreate2Factory && deployerEOA
       ? [
           {
-            name: "SignalsCreate2Factory",
-            address: envData.contracts.SignalsCreate2Factory,
-            contract: "contracts/deploy/SignalsCreate2Factory.sol:SignalsCreate2Factory",
+            name: "IcicleOptionsCreate2Factory",
+            address: envData.contracts.IcicleOptionsCreate2Factory,
+            contract: "contracts/deploy/IcicleOptionsCreate2Factory.sol:IcicleOptionsCreate2Factory",
             constructorArguments: [deployerEOA],
           },
         ]
       : []),
-    ...(envData.contracts.SignalsDeployer && deployerEOA
+    ...(envData.contracts.IcicleOptionsDeployer && deployerEOA
       ? [
           {
-            name: "SignalsDeployer",
-            address: envData.contracts.SignalsDeployer,
-            contract: "contracts/deploy/SignalsDeployer.sol:SignalsDeployer",
+            name: "IcicleOptionsDeployer",
+            address: envData.contracts.IcicleOptionsDeployer,
+            contract: "contracts/deploy/IcicleOptionsDeployer.sol:IcicleOptionsDeployer",
             constructorArguments: [deployerEOA],
           },
         ]

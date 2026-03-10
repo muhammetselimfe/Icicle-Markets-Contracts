@@ -250,7 +250,7 @@ async function decodeRevert(err: unknown) {
   }
 
   try {
-    const artifact = await hre.artifacts.readArtifact("SignalsErrors");
+    const artifact = await hre.artifacts.readArtifact("IcicleOptionsErrors");
     const iface = new hre.ethers.Interface(artifact.abi);
     const parsed = iface.parseError(data);
     console.error(`[create-market-dev-prior] reverted with ${parsed?.name}`);
@@ -308,8 +308,8 @@ async function main() {
   console.log(`[create-market-dev-prior] environment=${env} network=${network.name}`);
 
   const envData = loadEnvironment(env);
-  const coreAddress = envData.contracts.SignalsCoreProxy;
-  if (!coreAddress) throw new Error("Missing SignalsCoreProxy in environment file");
+  const coreAddress = envData.contracts.IcicleOptionsCoreProxy;
+  if (!coreAddress) throw new Error("Missing IcicleOptionsCoreProxy in environment file");
 
   const feePolicyAddress = CONFIG.feePolicyAddress;
   if (!feePolicyAddress) {
@@ -317,7 +317,7 @@ async function main() {
   }
 
   const [deployer] = await ethers.getSigners();
-  const core = await ethers.getContractAt("SignalsCore", coreAddress);
+  const core = await ethers.getContractAt("IcicleOptionsCore", coreAddress);
   const owner = await core.owner();
   const paused = await core.paused();
   console.log(`[create-market-dev-prior] coreOwner=${owner} caller=${deployer.address} paused=${paused}`);

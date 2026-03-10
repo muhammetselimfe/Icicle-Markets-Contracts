@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { LazyMulSegmentTree, LPVaultModule, MarketLifecycleModule, MockERC20, MockSignalsPosition, TradeModule, OracleModule, SignalsCoreHarness, SignalsCore, TestERC1967Proxy } from '../../../typechain-types';
+import { LazyMulSegmentTree, LPVaultModule, MarketLifecycleModule, MockERC20, MockIcicleOptionsPosition, TradeModule, OracleModule, IcicleOptionsCoreHarness, IcicleOptionsCore, TestERC1967Proxy } from '../../../typechain-types';
 import {
   DATA_FEED_ID,
   FEED_DECIMALS,
@@ -40,8 +40,8 @@ describe("VaultWithMarkets E2E", () => {
     )) as MockERC20;
 
     const position = (await (
-      await ethers.getContractFactory("MockSignalsPosition")
-    ).deploy()) as MockSignalsPosition;
+      await ethers.getContractFactory("MockIcicleOptionsPosition")
+    ).deploy()) as MockIcicleOptionsPosition;
 
     const lazy = (await (
       await ethers.getContractFactory("LazyMulSegmentTree")
@@ -67,17 +67,17 @@ describe("VaultWithMarkets E2E", () => {
     const risk = await (await ethers.getContractFactory("RiskModule")).deploy();
 
     const coreImpl = (await (
-      await ethers.getContractFactory("SignalsCoreHarness", {
+      await ethers.getContractFactory("IcicleOptionsCoreHarness", {
         libraries: { LazyMulSegmentTree: lazy.target },
       })
-    ).deploy()) as SignalsCoreHarness;
+    ).deploy()) as IcicleOptionsCoreHarness;
 
     const feePolicy = await (
       await ethers.getContractFactory("MockFeePolicy")
     ).deploy(0);
 
     const lpShareImpl = await (
-      await ethers.getContractFactory("SignalsLPShare")
+      await ethers.getContractFactory("IcicleOptionsLPShare")
     ).deploy();
     const proxyFactory = await ethers.getContractFactory("TestERC1967Proxy");
     const lpShareProxy = (await proxyFactory.deploy(
@@ -90,18 +90,18 @@ describe("VaultWithMarkets E2E", () => {
     )) as TestERC1967Proxy;
 
     const core = (await ethers.getContractAt(
-      "SignalsCoreHarness",
+      "IcicleOptionsCoreHarness",
       await coreProxy.getAddress()
-    )) as SignalsCoreHarness;
+    )) as IcicleOptionsCoreHarness;
     const lpShare = await ethers.getContractAt(
-      "SignalsLPShare",
+      "IcicleOptionsLPShare",
       await lpShareProxy.getAddress()
     );
 
     const submitWindow = 300;
     const opsWindow = 60;
     const claimDelay = submitWindow + opsWindow;
-    const coreParams: SignalsCore.InitParamsStruct = {
+    const coreParams: IcicleOptionsCore.InitParamsStruct = {
       paymentToken: payment.target.toString(),
       positionContract: position.target.toString(),
       lpShareToken: await lpShare.getAddress(),
@@ -132,8 +132,8 @@ describe("VaultWithMarkets E2E", () => {
     await lpShare.initialize(
       await core.getAddress(),
       payment.target.toString(),
-      "Signals LP",
-      "SIGLP",
+      "Icicle Options LP",
+      "ICOLP",
       owner.address
     );
     // Capital stack starts at zero by default

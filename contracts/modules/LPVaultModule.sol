@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../core/SignalsCoreStorage.sol";
+import "../core/IcicleOptionsCoreStorage.sol";
 import "../lib/VaultAccountingLib.sol";
 import "../lib/FeeWaterfallLib.sol";
 import "../lib/FixedPointMathU.sol";
-import {SignalsErrors as SE} from "../errors/SignalsErrors.sol";
-import "../interfaces/ISignalsLPShare.sol";
+import {IcicleOptionsErrors as SE} from "../errors/IcicleOptionsErrors.sol";
+import "../interfaces/IIcicleOptionsLPShare.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
@@ -26,7 +26,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  * 3. processDailyBatch(batchId) processes pre-aggregated totals
  * 4. User calls claimDeposit/claimWithdraw to receive shares/assets
  */
-contract LPVaultModule is SignalsCoreStorage {
+contract LPVaultModule is IcicleOptionsCoreStorage {
     using SafeERC20 for IERC20;
     using VaultAccountingLib for *;
     using FixedPointMathU for uint256;
@@ -127,8 +127,8 @@ contract LPVaultModule is SignalsCoreStorage {
         
         // Mint LP share tokens (seeder gets all except dead shares)
         if (lpShareToken != address(0)) {
-            ISignalsLPShare(lpShareToken).mint(msg.sender, seederShares);
-            ISignalsLPShare(lpShareToken).mint(DEAD_ADDRESS, MIN_DEAD_SHARES);
+            IIcicleOptionsLPShare(lpShareToken).mint(msg.sender, seederShares);
+            IIcicleOptionsLPShare(lpShareToken).mint(DEAD_ADDRESS, MIN_DEAD_SHARES);
         }
 
         // Initialize currentBatchId as a day-key so that:
@@ -238,7 +238,7 @@ contract LPVaultModule is SignalsCoreStorage {
 
         // Burn LP share tokens from user at request time (escrow against double-spending)
         if (lpShareToken != address(0)) {
-            ISignalsLPShare(lpShareToken).burn(msg.sender, shares);
+            IIcicleOptionsLPShare(lpShareToken).burn(msg.sender, shares);
         }
 
         requestId = nextWithdrawRequestId++;
@@ -313,7 +313,7 @@ contract LPVaultModule is SignalsCoreStorage {
 
         // Refund LP share tokens to user on cancel
         if (lpShareToken != address(0)) {
-            ISignalsLPShare(lpShareToken).mint(msg.sender, shares);
+            IIcicleOptionsLPShare(lpShareToken).mint(msg.sender, shares);
         }
 
         emit WithdrawRequestCancelled(requestId, msg.sender, shares);
@@ -546,7 +546,7 @@ contract LPVaultModule is SignalsCoreStorage {
 
         // Mint LP share tokens to depositor
         if (lpShareToken != address(0)) {
-            ISignalsLPShare(lpShareToken).mint(msg.sender, shares);
+            IIcicleOptionsLPShare(lpShareToken).mint(msg.sender, shares);
         }
         
         // Refund residual to depositor (convert WAD to 6 decimals)

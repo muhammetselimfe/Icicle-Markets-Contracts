@@ -2,10 +2,10 @@
 pragma solidity ^0.8.28;
 
 import "./FixedPointMathU.sol";
-import {SignalsErrors as SE} from "../errors/SignalsErrors.sol";
+import {IcicleOptionsErrors as SE} from "../errors/IcicleOptionsErrors.sol";
 
 /// @title RiskMath
-/// @notice Core risk calculation library for Signals Protocol
+/// @notice Core risk calculation library for Icicle Options Protocol
 /// @dev Implements:
 ///      - ΔEₜ (tail budget) calculation from prior
 ///      - αbase/αlimit calculation with peak drawdown

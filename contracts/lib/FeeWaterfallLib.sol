@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import "./FixedPointMathU.sol";
-import {SignalsErrors as SE} from "../errors/SignalsErrors.sol";
+import {IcicleOptionsErrors as SE} from "../errors/IcicleOptionsErrors.sol";
 
 /// @title FeeWaterfallLib
 /// @notice Pure library implementing the Fee Waterfall algorithm

@@ -5,18 +5,18 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "../errors/SignalsErrors.sol";
-import "../interfaces/ISignalsPosition.sol";
-import "./SignalsPositionStorage.sol";
+import "../errors/IcicleOptionsErrors.sol";
+import "../interfaces/IIcicleOptionsPosition.sol";
+import "./IcicleOptionsPositionStorage.sol";
 
 /// @notice Upgradeable ERC721 position token with core-only mint/burn/update and indexing helpers.
-contract SignalsPosition is
+contract IcicleOptionsPosition is
     Initializable,
     ERC721Upgradeable,
     OwnableUpgradeable,
     UUPSUpgradeable,
-    SignalsErrors,
-    SignalsPositionStorage
+    IcicleOptionsErrors,
+    IcicleOptionsPositionStorage
 {
     event PositionMinted(
         uint256 indexed positionId,
@@ -32,7 +32,7 @@ contract SignalsPosition is
     event PositionUpdated(uint256 indexed positionId, uint128 oldQuantity, uint128 newQuantity);
 
     modifier onlyCore() {
-        if (msg.sender != core) revert SignalsErrors.UnauthorizedCaller(msg.sender);
+        if (msg.sender != core) revert IcicleOptionsErrors.UnauthorizedCaller(msg.sender);
         _;
     }
 
@@ -42,10 +42,10 @@ contract SignalsPosition is
     }
 
     function initialize(address _core, address _ownerSafe) external initializer {
-        if (_core == address(0)) revert SignalsErrors.ZeroAddress();
-        if (_ownerSafe == address(0)) revert SignalsErrors.ZeroAddress();
-        if (_core.code.length == 0) revert SignalsErrors.ModuleNotSet();
-        __ERC721_init("Signals Position", "SIGP");
+        if (_core == address(0)) revert IcicleOptionsErrors.ZeroAddress();
+        if (_ownerSafe == address(0)) revert IcicleOptionsErrors.ZeroAddress();
+        if (_core.code.length == 0) revert IcicleOptionsErrors.ModuleNotSet();
+        __ERC721_init("Icicle Options Position", "ICOP");
         __Ownable_init(_ownerSafe);
         __UUPSUpgradeable_init();
         core = _core;
@@ -61,12 +61,12 @@ contract SignalsPosition is
         int256 upperTick,
         uint128 quantity
     ) external onlyCore returns (uint256 positionId) {
-        if (to == address(0)) revert SignalsErrors.ZeroAddress();
-        if (quantity == 0) revert SignalsErrors.InvalidQuantity(quantity);
+        if (to == address(0)) revert IcicleOptionsErrors.ZeroAddress();
+        if (quantity == 0) revert IcicleOptionsErrors.InvalidQuantity(quantity);
 
         positionId = _nextId++;
 
-        _positions[positionId] = ISignalsPosition.Position({
+        _positions[positionId] = IIcicleOptionsPosition.Position({
             marketId: marketId,
             lowerTick: lowerTick,
             upperTick: upperTick,
@@ -81,7 +81,7 @@ contract SignalsPosition is
     }
 
     function burn(uint256 positionId) external onlyCore {
-        if (!_exists(positionId)) revert SignalsErrors.PositionNotFound(positionId);
+        if (!_exists(positionId)) revert IcicleOptionsErrors.PositionNotFound(positionId);
         address owner = ownerOf(positionId);
         uint256 marketId = _positions[positionId].marketId;
 
@@ -93,8 +93,8 @@ contract SignalsPosition is
     }
 
     function updateQuantity(uint256 positionId, uint128 newQuantity) external onlyCore {
-        if (!_exists(positionId)) revert SignalsErrors.PositionNotFound(positionId);
-        if (newQuantity == 0) revert SignalsErrors.InvalidQuantity(newQuantity);
+        if (!_exists(positionId)) revert IcicleOptionsErrors.PositionNotFound(positionId);
+        if (newQuantity == 0) revert IcicleOptionsErrors.InvalidQuantity(newQuantity);
         uint128 oldQty = _positions[positionId].quantity;
         _positions[positionId].quantity = newQuantity;
         emit PositionUpdated(positionId, oldQty, newQuantity);
@@ -102,8 +102,8 @@ contract SignalsPosition is
 
     // --- Views ---
 
-    function getPosition(uint256 positionId) external view returns (ISignalsPosition.Position memory position) {
-        if (!_exists(positionId)) revert SignalsErrors.PositionNotFound(positionId);
+    function getPosition(uint256 positionId) external view returns (IIcicleOptionsPosition.Position memory position) {
+        if (!_exists(positionId)) revert IcicleOptionsErrors.PositionNotFound(positionId);
         return _positions[positionId];
     }
 

@@ -2,12 +2,12 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { Signer } from "ethers";
-import { SignalsPosition, SignalsUSDToken } from "../../typechain-types";
+import { IcicleOptionsPosition, IcicleOptionsUSDToken } from "../../typechain-types";
 
 async function deployCoreSigner(): Promise<{ address: string; signer: Signer }> {
   const token = (await (
-    await ethers.getContractFactory("SignalsUSDToken")
-  ).deploy()) as SignalsUSDToken;
+    await ethers.getContractFactory("IcicleOptionsUSDToken")
+  ).deploy()) as IcicleOptionsUSDToken;
   await token.waitForDeployment();
   const address = await token.getAddress();
   await ethers.provider.send("hardhat_impersonateAccount", [address]);
@@ -36,7 +36,7 @@ describe("Position Invariants", () => {
     const [owner, alice, bob, charlie, dave] = await ethers.getSigners();
     const core = await deployCoreSigner();
 
-    const implFactory = await ethers.getContractFactory("SignalsPosition");
+    const implFactory = await ethers.getContractFactory("IcicleOptionsPosition");
     const impl = await implFactory.deploy();
     await impl.waitForDeployment();
 
@@ -49,9 +49,9 @@ describe("Position Invariants", () => {
     ).deploy(await impl.getAddress(), initData);
 
     const position = (await ethers.getContractAt(
-      "SignalsPosition",
+      "IcicleOptionsPosition",
       await proxy.getAddress()
-    )) as SignalsPosition;
+    )) as IcicleOptionsPosition;
 
     return { owner, core: core.signer, alice, bob, charlie, dave, position };
   }

@@ -5,15 +5,15 @@
   "deployerEOA": "0xe0785a8cDc92bAe49Ae7aA6C99B602e3CC43F7eD",
   "create2Factory": "0x247aA8fabb783deFbC2cB0e3a5D378eD44d4E67A",
   "contracts": {
-    "SignalsCreate2Factory": "0x247aA8fabb783deFbC2cB0e3a5D378eD44d4E67A",
-    "SignalsDeployer": "0xa11340e517381fBD1275e81EeaEA405dFC8193Cd",
-    "SignalsCoreProxy": "0x5160e4deD8D54288189934781986915c253D6164",
-    "SignalsPositionProxy": "0x76B980Da002Ea7098A894E6770651AE570dA4C32",
-    "SignalsLPShareProxy": "0x1D6dCCff73DA38DC8303B37750Ed4a88c6b2408B",
-    "SignalsLPShare": "0x1D6dCCff73DA38DC8303B37750Ed4a88c6b2408B",
-    "SignalsCoreImplementation": "0xF6A0C56dd5A5F43f800A6Ea0f85C19c8ab0fdFa5",
-    "SignalsPositionImplementation": "0x1099301f8a362C9881a97F3d4caC7F3E087A2B37",
-    "SignalsLPShareImplementation": "0x1b7b96fb51341778d1172DD71Dc660aB235A0a77"
+    "IcicleOptionsCreate2Factory": "0x247aA8fabb783deFbC2cB0e3a5D378eD44d4E67A",
+    "IcicleOptionsDeployer": "0xa11340e517381fBD1275e81EeaEA405dFC8193Cd",
+    "IcicleOptionsCoreProxy": "0x5160e4deD8D54288189934781986915c253D6164",
+    "IcicleOptionsPositionProxy": "0x76B980Da002Ea7098A894E6770651AE570dA4C32",
+    "IcicleOptionsLPShareProxy": "0x1D6dCCff73DA38DC8303B37750Ed4a88c6b2408B",
+    "IcicleOptionsLPShare": "0x1D6dCCff73DA38DC8303B37750Ed4a88c6b2408B",
+    "IcicleOptionsCoreImplementation": "0xF6A0C56dd5A5F43f800A6Ea0f85C19c8ab0fdFa5",
+    "IcicleOptionsPositionImplementation": "0x1099301f8a362C9881a97F3d4caC7F3E087A2B37",
+    "IcicleOptionsLPShareImplementation": "0x1b7b96fb51341778d1172DD71Dc660aB235A0a77"
   },
   "create2": {
     "vanityPrefix": "0x516",

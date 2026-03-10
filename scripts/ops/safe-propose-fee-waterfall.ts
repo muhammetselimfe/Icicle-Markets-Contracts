@@ -34,8 +34,8 @@ function buildTransactionBuilderJson(params: {
     chainId: params.chainId,
     createdAt: Date.now(),
     meta: {
-      name: "Signals.setFeeWaterfallConfig",
-      description: "Set fee waterfall config on SignalsCore",
+      name: "IcicleOptions.setFeeWaterfallConfig",
+      description: "Set fee waterfall config on IcicleOptionsCore",
       txBuilderVersion: "1.16.1",
       createdFromSafeAddress: params.safeAddress,
     },
@@ -66,9 +66,9 @@ async function main() {
   console.log(`[safe-propose] environment=${env} network=${network.name}`);
 
   const envData = loadEnvironment(env);
-  const coreAddress = process.env.CORE_ADDRESS ?? envData.contracts.SignalsCoreProxy;
+  const coreAddress = process.env.CORE_ADDRESS ?? envData.contracts.IcicleOptionsCoreProxy;
   if (!coreAddress) {
-    throw new Error("Missing CORE_ADDRESS (or SignalsCoreProxy in environment file)");
+    throw new Error("Missing CORE_ADDRESS (or IcicleOptionsCoreProxy in environment file)");
   }
 
   const safeAddress = process.env.SAFE_ADDRESS ?? envData.config?.owners?.core;
@@ -172,11 +172,11 @@ async function main() {
           safeTxHash,
           sender: proposer.address,
           signature: signature.data,
-          origin: "signals-v1",
+          origin: "icicle-options-v1",
         };
         const headers: Record<string, string> = {
           "content-type": "application/json",
-          "user-agent": "signals-safe-client/1.0",
+          "user-agent": "icicle-options-safe-client/1.0",
         };
         if (gatewayApiKey) {
           headers.authorization = `Bearer ${gatewayApiKey}`;
@@ -204,7 +204,7 @@ async function main() {
           safeTxHash,
           senderAddress: proposer.address,
           senderSignature: signature.data,
-          origin: "signals-v1",
+          origin: "icicle-options-v1",
         });
         console.log(`[safe-propose] proposed via tx-service txHash=${safeTxHash}`);
       }

@@ -3,12 +3,12 @@ import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import {
-  SignalsUSDToken,
+  IcicleOptionsUSDToken,
   MockFeePolicy,
   TradeModuleProxy,
-  SignalsPosition,
+  IcicleOptionsPosition,
 } from "../../../typechain-types";
-import { ISignalsCore } from "../../../typechain-types/contracts/testonly/TradeModuleProxy";
+import { IIcicleOptionsCore } from "../../../typechain-types/contracts/testonly/TradeModuleProxy";
 import { WAD, USDC_DECIMALS, SMALL_QUANTITY, MEDIUM_QUANTITY } from "../../helpers/constants";
 
 /**
@@ -17,21 +17,21 @@ import { WAD, USDC_DECIMALS, SMALL_QUANTITY, MEDIUM_QUANTITY } from "../../helpe
  * Tests correct event emission and state changes for:
  * - Position lifecycle (open, increase, decrease, close)
  * 
- * Note: In v1 architecture, position events are emitted from SignalsPosition:
+ * Note: In v1 architecture, position events are emitted from IcicleOptionsPosition:
  * - PositionMinted (on open)
  * - PositionUpdated (on increase/decrease)
  * - PositionBurned (on close)
  * 
  * TradeModule emits trade lifecycle events (open/increase/decrease/close + claim/settle),
- * while SignalsPosition emits tokenization events (mint/update/burn).
+ * while IcicleOptionsPosition emits tokenization events (mint/update/burn).
  */
 
 interface DeployedSystem {
   owner: HardhatEthersSigner;
   user: HardhatEthersSigner;
   user2: HardhatEthersSigner;
-  payment: SignalsUSDToken;
-  position: SignalsPosition;
+  payment: IcicleOptionsUSDToken;
+  position: IcicleOptionsPosition;
   core: TradeModuleProxy;
   feePolicy: MockFeePolicy;
   marketId: number;
@@ -45,7 +45,7 @@ describe("Events & Position Lifecycle", () => {
     const [owner, user, user2] = await ethers.getSigners();
 
     const payment = await (
-      await ethers.getContractFactory("SignalsUSDToken")
+      await ethers.getContractFactory("IcicleOptionsUSDToken")
     ).deploy();
 
     const feePolicy = await (
@@ -67,7 +67,7 @@ describe("Events & Position Lifecycle", () => {
       })
     ).deploy(tradeModuleImpl.target);
 
-    const positionImplFactory = await ethers.getContractFactory("SignalsPosition");
+    const positionImplFactory = await ethers.getContractFactory("IcicleOptionsPosition");
     const positionImpl = await positionImplFactory.deploy();
     await positionImpl.waitForDeployment();
     const positionInit = positionImplFactory.interface.encodeFunctionData(
@@ -78,9 +78,9 @@ describe("Events & Position Lifecycle", () => {
       await ethers.getContractFactory("TestERC1967Proxy")
     ).deploy(positionImpl.target, positionInit);
     const position = (await ethers.getContractAt(
-      "SignalsPosition",
+      "IcicleOptionsPosition",
       await positionProxy.getAddress()
-    )) as SignalsPosition;
+    )) as IcicleOptionsPosition;
 
     await core.setAddresses(
       payment.target,
@@ -90,7 +90,7 @@ describe("Events & Position Lifecycle", () => {
     );
 
     const now = (await ethers.provider.getBlock("latest"))!.timestamp;
-    const market: ISignalsCore.MarketStruct = {
+    const market: IIcicleOptionsCore.MarketStruct = {
       isSeeded: true,
       settled: false,
       snapshotChunksDone: false,
@@ -131,9 +131,9 @@ describe("Events & Position Lifecycle", () => {
   }
 
   // ============================================================
-  // Position Events from SignalsPosition
+  // Position Events from IcicleOptionsPosition
   // ============================================================
-  describe("SignalsPosition Events", () => {
+  describe("IcicleOptionsPosition Events", () => {
     it("emits PositionMinted on openPosition with correct args", async () => {
       const { core, position, user, marketId } = await loadFixture(deployEventFixture);
 
@@ -223,7 +223,7 @@ describe("Events & Position Lifecycle", () => {
 
   // ============================================================
   // TradeModule Events
-  // Note: TradeModule emits trade lifecycle events; SignalsPosition emits mint/update/burn
+  // Note: TradeModule emits trade lifecycle events; IcicleOptionsPosition emits mint/update/burn
   // ============================================================
   describe("TradeModule Events", () => {
     it("emits PositionClosed with correct position and trader", async () => {

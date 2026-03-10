@@ -109,7 +109,7 @@ async function main() {
   const deployRisk = modulesToDeploy.has("RiskModule");
   const deployVault = modulesToDeploy.has("LPVaultModule");
 
-  const coreProxy = requireAddress(envData.contracts.SignalsCoreProxy, "SignalsCoreProxy");
+  const coreProxy = requireAddress(envData.contracts.IcicleOptionsCoreProxy, "IcicleOptionsCoreProxy");
   const existingTrade = requireAddress(envData.contracts.TradeModule, "TradeModule");
   const existingLifecycle = requireAddress(
     envData.contracts.MarketLifecycleModule,
@@ -130,7 +130,7 @@ async function main() {
   console.log(`[prepare-safe-upgrade] deployer=${deployer.address}`);
   console.log(`[prepare-safe-upgrade] modules=${Array.from(modulesToDeploy).join(",")}`);
 
-  const coreImpl = await (await ethers.getContractFactory("SignalsCore")).deploy();
+  const coreImpl = await (await ethers.getContractFactory("IcicleOptionsCore")).deploy();
   await coreImpl.waitForDeployment();
   const newCoreImpl = coreImpl.target.toString();
 
@@ -184,7 +184,7 @@ async function main() {
     vaultModule = vault.target.toString();
   }
 
-  const coreIface = (await ethers.getContractFactory("SignalsCore")).interface;
+  const coreIface = (await ethers.getContractFactory("IcicleOptionsCore")).interface;
   const setModulesCalldata = coreIface.encodeFunctionData("setModules", [
     tradeModule,
     lifecycleModule,
@@ -230,7 +230,7 @@ async function main() {
     deployer: deployer.address,
     coreProxy,
     deployed: {
-      SignalsCoreImplementation: newCoreImpl,
+      IcicleOptionsCoreImplementation: newCoreImpl,
       LazyMulSegmentTree: lazyAddress,
       TradeModule: tradeModule,
       MarketLifecycleModule: lifecycleModule,
@@ -293,7 +293,7 @@ async function main() {
   printCopyBlock("7_CALLDATA_DIRECT_PASTE", upgradeToAndCallCalldata);
   console.log("");
   console.log("[Deployed contracts for env update after Safe execution]");
-  console.log(`SignalsCoreImplementation: ${newCoreImpl}`);
+  console.log(`IcicleOptionsCoreImplementation: ${newCoreImpl}`);
   console.log(`LazyMulSegmentTree: ${lazyAddress}`);
   console.log(`TradeModule: ${tradeModule}`);
   console.log(`MarketLifecycleModule: ${lifecycleModule}`);

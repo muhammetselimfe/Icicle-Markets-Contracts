@@ -17,7 +17,7 @@ async function decodeRevert(err: unknown): Promise<{ name?: string; args?: unkno
   if (!data) return {};
 
   try {
-    const artifact = await hre.artifacts.readArtifact("SignalsErrors");
+    const artifact = await hre.artifacts.readArtifact("IcicleOptionsErrors");
     const iface = new hre.ethers.Interface(artifact.abi);
     const parsed = iface.parseError(data);
     return { name: parsed?.name, args: parsed?.args ? Array.from(parsed.args) : [] };
@@ -32,8 +32,8 @@ async function main() {
   console.log(`[claim-payout] environment=${env} network=${network.name}`);
 
   const envData = loadEnvironment(env);
-  const coreAddress = envData.contracts.SignalsCoreProxy;
-  if (!coreAddress) throw new Error("Missing SignalsCoreProxy in environment file");
+  const coreAddress = envData.contracts.IcicleOptionsCoreProxy;
+  if (!coreAddress) throw new Error("Missing IcicleOptionsCoreProxy in environment file");
 
   const marketIdRaw = process.env[MARKET_ID_ENV];
   const positionIdRaw = process.env[POSITION_ID_ENV];
@@ -44,7 +44,7 @@ async function main() {
   const positionId = BigInt(positionIdRaw);
 
   const [deployer] = await ethers.getSigners();
-  const core = await ethers.getContractAt("SignalsCore", coreAddress, deployer);
+  const core = await ethers.getContractAt("IcicleOptionsCore", coreAddress, deployer);
 
   const market = await core.markets(marketId);
   console.log(`[claim-payout] marketId=${marketId.toString()} settled=${market.settled}`);

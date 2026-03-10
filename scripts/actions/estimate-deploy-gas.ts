@@ -34,20 +34,20 @@ export async function estimateDeployGasAction(env: Environment = "local") {
 
   const entries: GasEntry[] = [];
 
-  const factory = await ethers.getContractFactory("SignalsCreate2Factory");
+  const factory = await ethers.getContractFactory("IcicleOptionsCreate2Factory");
   const factoryDeploy = await factory.deploy(deployer.address);
   await factoryDeploy.waitForDeployment();
   const factoryTx = factoryDeploy.deploymentTransaction();
   if (factoryTx) {
     const receipt = await factoryTx.wait();
     if (!receipt) {
-      throw new Error("[estimate-gas] missing receipt for SignalsCreate2Factory");
+      throw new Error("[estimate-gas] missing receipt for IcicleOptionsCreate2Factory");
     }
-    entries.push({ label: "SignalsCreate2Factory", gasUsed: receipt.gasUsed });
+    entries.push({ label: "IcicleOptionsCreate2Factory", gasUsed: receipt.gasUsed });
   }
   const create2FactoryAddress = factoryDeploy.target.toString();
 
-  const paymentToken = await (await ethers.getContractFactory("SignalsUSDToken")).deploy();
+  const paymentToken = await (await ethers.getContractFactory("IcicleOptionsUSDToken")).deploy();
   const paymentReceipt = await paymentToken.deploymentTransaction()?.wait();
   if (paymentReceipt) {
     entries.push({ label: "PaymentTokenMock", gasUsed: paymentReceipt.gasUsed });
@@ -106,17 +106,17 @@ export async function estimateDeployGasAction(env: Environment = "local") {
   const vaultReceipt = await vaultModule.deploymentTransaction()?.wait();
   if (vaultReceipt) entries.push({ label: "LPVaultModule", gasUsed: vaultReceipt.gasUsed });
 
-  const coreImpl = await (await ethers.getContractFactory("SignalsCore")).deploy();
+  const coreImpl = await (await ethers.getContractFactory("IcicleOptionsCore")).deploy();
   const coreImplReceipt = await coreImpl.deploymentTransaction()?.wait();
-  if (coreImplReceipt) entries.push({ label: "SignalsCoreImpl", gasUsed: coreImplReceipt.gasUsed });
+  if (coreImplReceipt) entries.push({ label: "IcicleOptionsCoreImpl", gasUsed: coreImplReceipt.gasUsed });
 
-  const positionImpl = await (await ethers.getContractFactory("SignalsPosition")).deploy();
+  const positionImpl = await (await ethers.getContractFactory("IcicleOptionsPosition")).deploy();
   const positionImplReceipt = await positionImpl.deploymentTransaction()?.wait();
-  if (positionImplReceipt) entries.push({ label: "SignalsPositionImpl", gasUsed: positionImplReceipt.gasUsed });
+  if (positionImplReceipt) entries.push({ label: "IcicleOptionsPositionImpl", gasUsed: positionImplReceipt.gasUsed });
 
-  const lpShareImpl = await (await ethers.getContractFactory("SignalsLPShare")).deploy();
+  const lpShareImpl = await (await ethers.getContractFactory("IcicleOptionsLPShare")).deploy();
   const lpShareImplReceipt = await lpShareImpl.deploymentTransaction()?.wait();
-  if (lpShareImplReceipt) entries.push({ label: "SignalsLPShareImpl", gasUsed: lpShareImplReceipt.gasUsed });
+  if (lpShareImplReceipt) entries.push({ label: "IcicleOptionsLPShareImpl", gasUsed: lpShareImplReceipt.gasUsed });
 
   const { chainId } = await ethers.provider.getNetwork();
   const prediction = await predictCreate2({
@@ -132,23 +132,23 @@ export async function estimateDeployGasAction(env: Environment = "local") {
     maxNonce: 1_000_000,
   });
 
-  const deployerFactory = await ethers.getContractFactory("SignalsDeployer");
+  const deployerFactory = await ethers.getContractFactory("IcicleOptionsDeployer");
   const deployerInitCode = ethers.concat([
     deployerFactory.bytecode,
     ethers.AbiCoder.defaultAbiCoder().encode(["address"], [deployer.address]),
   ]);
 
-  const create2Factory = await ethers.getContractAt("SignalsCreate2Factory", create2FactoryAddress);
+  const create2Factory = await ethers.getContractAt("IcicleOptionsCreate2Factory", create2FactoryAddress);
   await recordGas(
-    "SignalsDeployer (CREATE2)",
+    "IcicleOptionsDeployer (CREATE2)",
     create2Factory.deploy(prediction.create2.salts.DEPLOYER.salt, deployerInitCode),
     entries
   );
 
   const coreParams = {
     paymentToken: paymentAddress,
-    positionContract: prediction.contracts.SignalsPositionProxy,
-    lpShareToken: prediction.contracts.SignalsLPShareProxy,
+    positionContract: prediction.contracts.IcicleOptionsPositionProxy,
+    lpShareToken: prediction.contracts.IcicleOptionsLPShareProxy,
     tradeModule: tradeModule.target.toString(),
     lifecycleModule: lifecycleModule.target.toString(),
     riskModule: riskModule.target.toString(),
@@ -174,8 +174,8 @@ export async function estimateDeployGasAction(env: Environment = "local") {
   };
 
   const deployerContract = await ethers.getContractAt(
-    "SignalsDeployer",
-    prediction.contracts.SignalsDeployer
+    "IcicleOptionsDeployer",
+    prediction.contracts.IcicleOptionsDeployer
   );
   await recordGas(
     "deployAllDeterministic (proxies + init)",
@@ -186,17 +186,17 @@ export async function estimateDeployGasAction(env: Environment = "local") {
       prediction.create2.salts.CORE_PROXY.salt,
       prediction.create2.salts.POSITION_PROXY.salt,
       prediction.create2.salts.LPSHARE_PROXY.salt,
-      prediction.contracts.SignalsCoreProxy,
-      prediction.contracts.SignalsPositionProxy,
-      prediction.contracts.SignalsLPShareProxy,
+      prediction.contracts.IcicleOptionsCoreProxy,
+      prediction.contracts.IcicleOptionsPositionProxy,
+      prediction.contracts.IcicleOptionsLPShareProxy,
       coreParams,
-      "Signals LP",
-      "SIGLP"
+      "Icicle Options LP",
+      "ICOLP"
     ),
     entries
   );
 
-  const core = await ethers.getContractAt("SignalsCore", prediction.contracts.SignalsCoreProxy);
+  const core = await ethers.getContractAt("IcicleOptionsCore", prediction.contracts.IcicleOptionsCoreProxy);
   await recordGas(
     "approve paymentToken",
     paymentToken.approve(core.target, ethers.MaxUint256),

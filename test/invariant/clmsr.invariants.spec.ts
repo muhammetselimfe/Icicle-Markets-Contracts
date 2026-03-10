@@ -3,12 +3,12 @@ import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import {
-  SignalsUSDToken,
+  IcicleOptionsUSDToken,
   MockFeePolicy,
   TradeModuleProxy,
-  SignalsPosition,
+  IcicleOptionsPosition,
 } from "../../typechain-types";
-import { ISignalsCore } from "../../typechain-types/contracts/testonly/TradeModuleProxy";
+import { IIcicleOptionsCore } from "../../typechain-types/contracts/testonly/TradeModuleProxy";
 import {
   WAD,
   USDC_DECIMALS,
@@ -31,8 +31,8 @@ interface DeployedSystem {
   owner: HardhatEthersSigner;
   user: HardhatEthersSigner;
   user2: HardhatEthersSigner;
-  payment: SignalsUSDToken;
-  position: SignalsPosition;
+  payment: IcicleOptionsUSDToken;
+  position: IcicleOptionsPosition;
   core: TradeModuleProxy;
   feePolicy: MockFeePolicy;
   marketId: number;
@@ -46,7 +46,7 @@ describe("CLMSR Invariants", () => {
     const [owner, user, user2] = await ethers.getSigners();
 
     const payment = await (
-      await ethers.getContractFactory("SignalsUSDToken")
+      await ethers.getContractFactory("IcicleOptionsUSDToken")
     ).deploy();
 
     const feePolicy = await (
@@ -69,7 +69,7 @@ describe("CLMSR Invariants", () => {
     ).deploy(tradeModule.target);
 
     const positionImplFactory = await ethers.getContractFactory(
-      "SignalsPosition"
+      "IcicleOptionsPosition"
     );
     const positionImpl = await positionImplFactory.deploy();
     await positionImpl.waitForDeployment();
@@ -81,9 +81,9 @@ describe("CLMSR Invariants", () => {
       await ethers.getContractFactory("TestERC1967Proxy")
     ).deploy(positionImpl.target, positionInit);
     const position = (await ethers.getContractAt(
-      "SignalsPosition",
+      "IcicleOptionsPosition",
       await positionProxy.getAddress()
-    )) as SignalsPosition;
+    )) as IcicleOptionsPosition;
 
     await core.setAddresses(
       payment.target,
@@ -93,7 +93,7 @@ describe("CLMSR Invariants", () => {
     );
 
     const now = (await ethers.provider.getBlock("latest"))!.timestamp;
-    const market: ISignalsCore.MarketStruct = {
+    const market: IIcicleOptionsCore.MarketStruct = {
       isSeeded: true,
       settled: false,
       snapshotChunksDone: false,
@@ -572,7 +572,7 @@ describe("CLMSR Invariants", () => {
 
       // Create fresh market for path 2
       const now = (await ethers.provider.getBlock("latest"))!.timestamp;
-      const market2: ISignalsCore.MarketStruct = {
+      const market2: IIcicleOptionsCore.MarketStruct = {
         isSeeded: true,
         settled: false,
         snapshotChunksDone: false,

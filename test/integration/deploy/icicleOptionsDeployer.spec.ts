@@ -6,28 +6,28 @@ import {
   MockFeePolicy,
   OracleModuleHarness,
   RiskModule,
-  SignalsCore,
-  SignalsDeployer,
-  SignalsLPShare,
-  SignalsPosition,
-  SignalsUSDToken,
+  IcicleOptionsCore,
+  IcicleOptionsDeployer,
+  IcicleOptionsLPShare,
+  IcicleOptionsPosition,
+  IcicleOptionsUSDToken,
   TradeModule,
 } from "../../../typechain-types";
 import { WAD } from "../../helpers/constants";
 
 type DeployFixture = {
   owner: string;
-  payment: SignalsUSDToken;
+  payment: IcicleOptionsUSDToken;
   feePolicy: MockFeePolicy;
   tradeModule: TradeModule;
   lifecycleModule: MarketLifecycleModule;
   riskModule: RiskModule;
   vaultModule: LPVaultModule;
   oracleModule: OracleModuleHarness;
-  coreImpl: SignalsCore;
-  positionImpl: SignalsPosition;
-  lpShareImpl: SignalsLPShare;
-  deployer: SignalsDeployer;
+  coreImpl: IcicleOptionsCore;
+  positionImpl: IcicleOptionsPosition;
+  lpShareImpl: IcicleOptionsLPShare;
+  deployer: IcicleOptionsDeployer;
 };
 
 function proxyInitCodeHash(proxyBytecode: string, impl: string): string {
@@ -43,8 +43,8 @@ async function deployFixture(): Promise<DeployFixture> {
   const [owner] = await ethers.getSigners();
 
   const payment = (await (
-    await ethers.getContractFactory("SignalsUSDToken")
-  ).deploy()) as SignalsUSDToken;
+    await ethers.getContractFactory("IcicleOptionsUSDToken")
+  ).deploy()) as IcicleOptionsUSDToken;
 
   const lazyLib = await (
     await ethers.getContractFactory("LazyMulSegmentTree")
@@ -78,20 +78,20 @@ async function deployFixture(): Promise<DeployFixture> {
     await ethers.getContractFactory("MockFeePolicy")
   ).deploy(0)) as MockFeePolicy;
 
-  const coreImplFactory = await ethers.getContractFactory("SignalsCore");
-  const coreImpl = (await coreImplFactory.deploy()) as SignalsCore;
+  const coreImplFactory = await ethers.getContractFactory("IcicleOptionsCore");
+  const coreImpl = (await coreImplFactory.deploy()) as IcicleOptionsCore;
 
   const positionImpl = (await (
-    await ethers.getContractFactory("SignalsPosition")
-  ).deploy()) as SignalsPosition;
+    await ethers.getContractFactory("IcicleOptionsPosition")
+  ).deploy()) as IcicleOptionsPosition;
 
   const lpShareImpl = (await (
-    await ethers.getContractFactory("SignalsLPShare")
-  ).deploy()) as SignalsLPShare;
+    await ethers.getContractFactory("IcicleOptionsLPShare")
+  ).deploy()) as IcicleOptionsLPShare;
 
   const deployer = (await (
-    await ethers.getContractFactory("SignalsDeployer")
-  ).deploy(owner.address)) as SignalsDeployer;
+    await ethers.getContractFactory("IcicleOptionsDeployer")
+  ).deploy(owner.address)) as IcicleOptionsDeployer;
 
   return {
     owner: owner.address,
@@ -109,7 +109,7 @@ async function deployFixture(): Promise<DeployFixture> {
   };
 }
 
-describe("SignalsDeployer", () => {
+describe("IcicleOptionsDeployer", () => {
   it("deploys deterministic proxies and initializes wiring", async () => {
     const fixture = await deployFixture();
 
@@ -145,7 +145,7 @@ describe("SignalsDeployer", () => {
       lpShareInitHash
     );
 
-    const coreParams: SignalsCore.InitParamsStruct = {
+    const coreParams: IcicleOptionsCore.InitParamsStruct = {
       paymentToken: paymentAddress,
       positionContract: predictedPosition,
       lpShareToken: predictedLPShare,
@@ -184,13 +184,13 @@ describe("SignalsDeployer", () => {
       predictedPosition,
       predictedLPShare,
       coreParams,
-      "Signals LP",
-      "SIGLP"
+      "Icicle Options LP",
+      "ICOLP"
     );
 
-    const core = await ethers.getContractAt("SignalsCore", predictedCore);
-    const position = await ethers.getContractAt("SignalsPosition", predictedPosition);
-    const lpShare = await ethers.getContractAt("SignalsLPShare", predictedLPShare);
+    const core = await ethers.getContractAt("IcicleOptionsCore", predictedCore);
+    const position = await ethers.getContractAt("IcicleOptionsPosition", predictedPosition);
+    const lpShare = await ethers.getContractAt("IcicleOptionsLPShare", predictedLPShare);
 
     expect(await core.owner()).to.equal(fixture.owner);
     expect(await position.owner()).to.equal(fixture.owner);
@@ -238,7 +238,7 @@ describe("SignalsDeployer", () => {
       lpShareInitHash
     );
 
-    const coreParams: SignalsCore.InitParamsStruct = {
+    const coreParams: IcicleOptionsCore.InitParamsStruct = {
       paymentToken: paymentAddress,
       positionContract: predictedPosition,
       lpShareToken: predictedLPShare,
@@ -279,8 +279,8 @@ describe("SignalsDeployer", () => {
         predictedPosition,
         predictedLPShare,
         coreParams,
-        "Signals LP",
-        "SIGLP"
+        "Icicle Options LP",
+        "ICOLP"
       )
     ).to.be.revertedWithCustomError(fixture.deployer, "Create2AddressMismatch");
   });
@@ -320,7 +320,7 @@ describe("SignalsDeployer", () => {
       lpShareInitHash
     );
 
-    const coreParams: SignalsCore.InitParamsStruct = {
+    const coreParams: IcicleOptionsCore.InitParamsStruct = {
       paymentToken: paymentAddress,
       positionContract: predictedPosition,
       lpShareToken: predictedLPShare,
@@ -359,8 +359,8 @@ describe("SignalsDeployer", () => {
       predictedPosition,
       predictedLPShare,
       coreParams,
-      "Signals LP",
-      "SIGLP"
+      "Icicle Options LP",
+      "ICOLP"
     );
 
     await expect(
@@ -375,8 +375,8 @@ describe("SignalsDeployer", () => {
         predictedPosition,
         predictedLPShare,
         coreParams,
-        "Signals LP",
-        "SIGLP"
+        "Icicle Options LP",
+        "ICOLP"
       )
     ).to.be.revertedWithCustomError(fixture.deployer, "DeploymentAlreadyExecuted");
   });

@@ -17,8 +17,8 @@ async function main() {
   }
 
   const envData = loadEnvironment(env);
-  const coreProxy = envData.contracts.SignalsCoreProxy;
-  if (!coreProxy) throw new Error("Missing SignalsCoreProxy in environment file");
+  const coreProxy = envData.contracts.IcicleOptionsCoreProxy;
+  if (!coreProxy) throw new Error("Missing IcicleOptionsCoreProxy in environment file");
 
   const existingTrade = envData.contracts.TradeModule;
   const existingOracle = envData.contracts.OracleModule;
@@ -45,10 +45,10 @@ async function main() {
   console.log(`  LazyMulSegmentTree=${existingLazy}`);
 
   // 1) Deploy new Core implementation (UUPS).
-  const coreImpl = await (await ethers.getContractFactory("SignalsCore")).deploy();
+  const coreImpl = await (await ethers.getContractFactory("IcicleOptionsCore")).deploy();
   await coreImpl.waitForDeployment();
   const coreImplAddr = coreImpl.target.toString();
-  console.log(`[hotfix-deploy] new SignalsCore implementation=${coreImplAddr}`);
+  console.log(`[hotfix-deploy] new IcicleOptionsCore implementation=${coreImplAddr}`);
 
   // 2) Deploy new MarketLifecycleModule linked against existing LazyMulSegmentTree.
   const lifecycleModule = await (
@@ -66,8 +66,8 @@ async function main() {
   const vaultAddr = vaultModule.target.toString();
   console.log(`[hotfix-deploy] new LPVaultModule=${vaultAddr}`);
 
-  // Safe calldata: interact with the CORE PROXY address using the SignalsCore ABI.
-  const coreIface = (await ethers.getContractFactory("SignalsCore")).interface;
+  // Safe calldata: interact with the CORE PROXY address using the IcicleOptionsCore ABI.
+  const coreIface = (await ethers.getContractFactory("IcicleOptionsCore")).interface;
 
   const setModulesCalldata = coreIface.encodeFunctionData("setModules", [
     existingTrade,

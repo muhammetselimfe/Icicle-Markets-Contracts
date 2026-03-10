@@ -2,11 +2,11 @@ import { ethers, upgrades } from "hardhat";
 import { expect } from "chai";
 
 describe("Access / Upgrade guards", () => {
-  it("prevents re-initialization of SignalsPosition proxy", async () => {
+  it("prevents re-initialization of IcicleOptionsPosition proxy", async () => {
     const [owner] = await ethers.getSigners();
-    const coreStub = await (await ethers.getContractFactory("SignalsUSDToken")).deploy();
+    const coreStub = await (await ethers.getContractFactory("IcicleOptionsUSDToken")).deploy();
     await coreStub.waitForDeployment();
-    const positionFactory = await ethers.getContractFactory("SignalsPosition");
+    const positionFactory = await ethers.getContractFactory("IcicleOptionsPosition");
     const proxy = await upgrades.deployProxy(
       positionFactory,
       [await coreStub.getAddress(), owner.address],
@@ -83,9 +83,9 @@ describe("Access / Upgrade guards", () => {
 
   it("rejects upgrade from non-owner", async () => {
     const [owner, attacker] = await ethers.getSigners();
-    const coreStub = await (await ethers.getContractFactory("SignalsUSDToken")).deploy();
+    const coreStub = await (await ethers.getContractFactory("IcicleOptionsUSDToken")).deploy();
     await coreStub.waitForDeployment();
-    const posFactory = await ethers.getContractFactory("SignalsPosition");
+    const posFactory = await ethers.getContractFactory("IcicleOptionsPosition");
     const proxy = await upgrades.deployProxy(
       posFactory,
       [await coreStub.getAddress(), owner.address],

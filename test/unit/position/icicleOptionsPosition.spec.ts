@@ -1,12 +1,12 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { Signer } from "ethers";
-import { SignalsPosition, SignalsUSDToken, TestERC1967Proxy } from "../../../typechain-types";
+import { IcicleOptionsPosition, IcicleOptionsUSDToken, TestERC1967Proxy } from "../../../typechain-types";
 
 async function deployCoreSigner(): Promise<{ address: string; signer: Signer }> {
   const token = (await (
-    await ethers.getContractFactory("SignalsUSDToken")
-  ).deploy()) as SignalsUSDToken;
+    await ethers.getContractFactory("IcicleOptionsUSDToken")
+  ).deploy()) as IcicleOptionsUSDToken;
   await token.waitForDeployment();
   const address = await token.getAddress();
   await ethers.provider.send("hardhat_impersonateAccount", [address]);
@@ -21,8 +21,8 @@ async function deployCoreSigner(): Promise<{ address: string; signer: Signer }> 
 async function deployPosition(
   initialCore: string,
   ownerSafe: string
-): Promise<SignalsPosition> {
-  const implFactory = await ethers.getContractFactory("SignalsPosition");
+): Promise<IcicleOptionsPosition> {
+  const implFactory = await ethers.getContractFactory("IcicleOptionsPosition");
   const impl = await implFactory.deploy();
   await impl.waitForDeployment();
   const initData = implFactory.interface.encodeFunctionData("initialize", [
@@ -33,9 +33,9 @@ async function deployPosition(
     await ethers.getContractFactory("TestERC1967Proxy")
   ).deploy(await impl.getAddress(), initData)) as TestERC1967Proxy;
   return (await ethers.getContractAt(
-    "SignalsPosition",
+    "IcicleOptionsPosition",
     await proxy.getAddress()
-  )) as SignalsPosition;
+  )) as IcicleOptionsPosition;
 }
 
 async function deployPositionFixture() {
@@ -45,7 +45,7 @@ async function deployPositionFixture() {
   return { position, core: core.signer, owner, user, alice, bob, carol };
 }
 
-describe("SignalsPosition", () => {
+describe("IcicleOptionsPosition", () => {
   it("enforces core-only mint/burn/update", async () => {
     const { position, core, user } = await deployPositionFixture();
 

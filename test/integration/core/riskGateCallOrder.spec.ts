@@ -2,13 +2,13 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { Signer } from 'ethers';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
-import { SignalsCoreHarness, SignalsCore, RiskModule, MockERC20, MockFeePolicy } from '../../../typechain-types';
+import { IcicleOptionsCoreHarness, IcicleOptionsCore, RiskModule, MockERC20, MockFeePolicy } from '../../../typechain-types';
 import { deploySeedData } from '../../helpers';
 
 /**
  * Core-first Risk Gate Call Order Tests
  *
- * Verifies that SignalsCore calls RiskModule gates BEFORE
+ * Verifies that IcicleOptionsCore calls RiskModule gates BEFORE
  * delegating to target modules. This is structural enforcement.
  *
  * Strategy: Use mock modules that revert with identifiable messages
@@ -18,7 +18,7 @@ describe('Core-first Risk Gate Call Order', () => {
   const WAD = ethers.parseEther('1');
   
   let owner: Signer;
-  let core: SignalsCoreHarness;
+  let core: IcicleOptionsCoreHarness;
   let paymentToken: MockERC20;
   let riskModule: RiskModule;
   let feePolicy: MockFeePolicy;
@@ -35,22 +35,22 @@ describe('Core-first Risk Gate Call Order', () => {
     const lazyLib = await LazyMulSegmentTree.deploy();
     
     // Deploy core harness with library linking
-    const SignalsCoreHarnessFactory = await ethers.getContractFactory('SignalsCoreHarness', {
+    const IcicleOptionsCoreHarnessFactory = await ethers.getContractFactory('IcicleOptionsCoreHarness', {
       libraries: { LazyMulSegmentTree: await lazyLib.getAddress() }
     });
-    const coreImpl = await SignalsCoreHarnessFactory.deploy();
+    const coreImpl = await IcicleOptionsCoreHarnessFactory.deploy();
     
-    const positionImplFactory = await ethers.getContractFactory('SignalsPosition');
+    const positionImplFactory = await ethers.getContractFactory('IcicleOptionsPosition');
     const positionImpl = await positionImplFactory.deploy();
-    const lpShareImpl = await (await ethers.getContractFactory('SignalsLPShare')).deploy();
+    const lpShareImpl = await (await ethers.getContractFactory('IcicleOptionsLPShare')).deploy();
     const proxyFactory = await ethers.getContractFactory('TestERC1967Proxy');
     const positionProxy = await proxyFactory.deploy(await positionImpl.getAddress(), '0x');
     const lpShareProxy = await proxyFactory.deploy(await lpShareImpl.getAddress(), '0x');
     const coreProxy = await proxyFactory.deploy(await coreImpl.getAddress(), '0x');
 
-    const position = await ethers.getContractAt('SignalsPosition', await positionProxy.getAddress());
-    const lpShare = await ethers.getContractAt('SignalsLPShare', await lpShareProxy.getAddress());
-    core = SignalsCoreHarnessFactory.attach(await coreProxy.getAddress()) as SignalsCoreHarness;
+    const position = await ethers.getContractAt('IcicleOptionsPosition', await positionProxy.getAddress());
+    const lpShare = await ethers.getContractAt('IcicleOptionsLPShare', await lpShareProxy.getAddress());
+    core = IcicleOptionsCoreHarnessFactory.attach(await coreProxy.getAddress()) as IcicleOptionsCoreHarness;
     
     // Deploy real modules with library linking
     const RiskModuleFactory = await ethers.getContractFactory('RiskModule');
@@ -77,7 +77,7 @@ describe('Core-first Risk Gate Call Order', () => {
     const opsWindow = 86400 - submitWindow;
     const claimDelay = submitWindow + opsWindow;
     const feedId = ethers.encodeBytes32String('BTC');
-    const coreParams: SignalsCore.InitParamsStruct = {
+    const coreParams: IcicleOptionsCore.InitParamsStruct = {
       paymentToken: await paymentToken.getAddress(),
       positionContract: await position.getAddress(),
       lpShareToken: await lpShare.getAddress(),
@@ -109,7 +109,7 @@ describe('Core-first Risk Gate Call Order', () => {
     await lpShare.initialize(
       await core.getAddress(),
       await paymentToken.getAddress(),
-      'Signals LP Share',
+      'IcicleOptions LP Share',
       'sLP',
       await owner.getAddress()
     );
@@ -284,7 +284,7 @@ describe('Core-first Risk Gate Call Order', () => {
 
       // Get position ID
       const positionAddr = await core.positionContract();
-      const positionContract = await ethers.getContractAt('SignalsPosition', positionAddr);
+      const positionContract = await ethers.getContractAt('IcicleOptionsPosition', positionAddr);
       const positions = await positionContract.getPositionsByOwner(await owner.getAddress());
       const positionId = positions[0];
 

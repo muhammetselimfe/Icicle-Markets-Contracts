@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {SignalsErrors as SE} from "contracts/errors/SignalsErrors.sol";
+import {IcicleOptionsErrors as SE} from "contracts/errors/IcicleOptionsErrors.sol";
 
 /// @title LazyMulSegmentTree
 /// @notice Sparse lazy multiplication segment tree for CLMSR tick data.

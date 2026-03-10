@@ -14,21 +14,31 @@ import { predictCreate2 } from "./predict-create2";
 const CHAIN_ID_GUARD: Partial<Record<Environment, number>> = {
   dev: 5115,
   prod: 4114,
+  fuji: 43113,
 };
 
-const MANUAL_INPUTS = {
-  ownerSafe: "0x0e5ed8B5Be63bf1f92Cc9A516B7cAADa1AeA6Bf8",
-  paymentTokenAddress: "0x8D82c4E3c936C7B5724A382a9c5a4E6Eb7aB6d5D",
-  operatorAllowlist: "0xe0785a8cDc92bAe49Ae7aA6C99B602e3CC43F7eD",
+interface ManualInputs {
+  ownerSafe: string;
+  paymentTokenAddress: string;
+  operatorAllowlist: string;
+  settlement: { submitWindowSec: string; pendingOpsWindowSec: string };
+  redstone: {
+    feedId: string;
+    feedDecimals: string;
+    maxSampleDistanceSec: string;
+    futureToleranceSec: string;
+  };
+  risk: { lambda: string; kDrawdown: string; enforceAlpha: string };
+  feeWaterfall: { rhoBS: string; phiLP: string; phiBS: string; phiTR: string };
+  withdrawalLagBatches: string;
+  lpShare: { name: string; symbol: string };
+  create2: { release: string; vanityPrefix: string; maxNonce: string };
+}
+
+const SHARED_DEFAULTS: Omit<ManualInputs, "ownerSafe" | "paymentTokenAddress" | "operatorAllowlist" | "redstone"> = {
   settlement: {
     submitWindowSec: "600",
     pendingOpsWindowSec: "300",
-  },
-  redstone: {
-    feedId: "BTC",
-    feedDecimals: "8",
-    maxSampleDistanceSec: "600",
-    futureToleranceSec: "60",
   },
   risk: {
     lambda: "0.3",
@@ -43,8 +53,8 @@ const MANUAL_INPUTS = {
   },
   withdrawalLagBatches: "0",
   lpShare: {
-    name: "Signals LP",
-    symbol: "SIGLP",
+    name: "Icicle Options LP",
+    symbol: "ICOLP",
   },
   create2: {
     release: "v1",
@@ -53,7 +63,40 @@ const MANUAL_INPUTS = {
   },
 };
 
-const INPUTS = MANUAL_INPUTS;
+const ENV_INPUTS: Partial<Record<Environment, ManualInputs>> = {
+  dev: {
+    ownerSafe: "0x0e5ed8B5Be63bf1f92Cc9A516B7cAADa1AeA6Bf8",
+    paymentTokenAddress: "0x8D82c4E3c936C7B5724A382a9c5a4E6Eb7aB6d5D",
+    operatorAllowlist: "0xe0785a8cDc92bAe49Ae7aA6C99B602e3CC43F7eD",
+    redstone: {
+      feedId: "BTC",
+      feedDecimals: "8",
+      maxSampleDistanceSec: "600",
+      futureToleranceSec: "60",
+    },
+    ...SHARED_DEFAULTS,
+  },
+  fuji: {
+    ownerSafe: "",
+    paymentTokenAddress: "",
+    operatorAllowlist: "",
+    redstone: {
+      feedId: "AVAX",
+      feedDecimals: "8",
+      maxSampleDistanceSec: "600",
+      futureToleranceSec: "60",
+    },
+    ...SHARED_DEFAULTS,
+  },
+};
+
+function getInputs(env: Environment): ManualInputs {
+  const inputs = ENV_INPUTS[env];
+  if (!inputs) {
+    throw new Error(`No deploy inputs configured for environment '${env}'`);
+  }
+  return inputs;
+}
 
 function parseAddressList(value: string): string[] {
   if (!value) return [];
@@ -96,6 +139,7 @@ export async function deployAction(env: Environment) {
   const [deployer] = await ethers.getSigners();
   console.log(`Deployer: ${deployer.address}`);
 
+  const inputs = getInputs(env);
   const envData = loadEnvironment(env);
 
   const { chainId } = await ethers.provider.getNetwork();
@@ -107,52 +151,52 @@ export async function deployAction(env: Environment) {
   }
 
   const submitWindow = parseBigInt(
-    INPUTS.settlement.submitWindowSec,
+    inputs.settlement.submitWindowSec,
     "SETTLEMENT_SUBMIT_WINDOW"
   );
   const pendingOpsWindow = parseBigInt(
-    INPUTS.settlement.pendingOpsWindowSec,
+    inputs.settlement.pendingOpsWindowSec,
     "SETTLEMENT_PENDING_OPS_WINDOW"
   );
   const claimDelay = submitWindow + pendingOpsWindow;
 
   const redstoneFeedDecimals = parseNumber(
-    INPUTS.redstone.feedDecimals,
+    inputs.redstone.feedDecimals,
     "REDSTONE_FEED_DECIMALS"
   );
   const redstoneMaxSampleDistance = parseBigInt(
-    INPUTS.redstone.maxSampleDistanceSec,
+    inputs.redstone.maxSampleDistanceSec,
     "REDSTONE_MAX_SAMPLE_DISTANCE"
   );
   const redstoneFutureTolerance = parseBigInt(
-    INPUTS.redstone.futureToleranceSec,
+    inputs.redstone.futureToleranceSec,
     "REDSTONE_FUTURE_TOLERANCE"
   );
 
-  const ownerSafe = INPUTS.ownerSafe || deployer.address;
-  const operatorAllowlist = parseAddressList(INPUTS.operatorAllowlist);
+  const ownerSafe = inputs.ownerSafe || deployer.address;
+  const operatorAllowlist = parseAddressList(inputs.operatorAllowlist);
   const resolvedOperators = operatorAllowlist.length
     ? operatorAllowlist
     : [deployer.address];
 
   const withdrawalLagBatches = parseNumber(
-    INPUTS.withdrawalLagBatches,
+    inputs.withdrawalLagBatches,
     "WITHDRAWAL_LAG_BATCHES"
   );
   if (withdrawalLagBatches < 0) {
     throw new Error("WITHDRAWAL_LAG_BATCHES must be >= 0");
   }
 
-  const riskLambda = wad(INPUTS.risk.lambda);
-  const riskKDrawdown = wad(INPUTS.risk.kDrawdown);
+  const riskLambda = wad(inputs.risk.lambda);
+  const riskKDrawdown = wad(inputs.risk.kDrawdown);
   const riskEnforceAlpha =
-    INPUTS.risk.enforceAlpha === "1" || INPUTS.risk.enforceAlpha === "true";
-  const rhoBS = wad(INPUTS.feeWaterfall.rhoBS);
-  const phiLP = wad(INPUTS.feeWaterfall.phiLP);
-  const phiBS = wad(INPUTS.feeWaterfall.phiBS);
-  const phiTR = wad(INPUTS.feeWaterfall.phiTR);
+    inputs.risk.enforceAlpha === "1" || inputs.risk.enforceAlpha === "true";
+  const rhoBS = wad(inputs.feeWaterfall.rhoBS);
+  const phiLP = wad(inputs.feeWaterfall.phiLP);
+  const phiBS = wad(inputs.feeWaterfall.phiBS);
+  const phiTR = wad(inputs.feeWaterfall.phiTR);
 
-  let paymentAddress = INPUTS.paymentTokenAddress;
+  let paymentAddress = inputs.paymentTokenAddress;
   if (env === "prod" && !paymentAddress) {
     throw new Error(
       "PAYMENT_TOKEN_ADDRESS is required for prod (no mock payment token deployment)"
@@ -162,7 +206,7 @@ export async function deployAction(env: Environment) {
     console.log(`[deploy] using existing payment token=${paymentAddress}`);
   } else {
     const payment = await (
-      await ethers.getContractFactory("SignalsUSDToken")
+      await ethers.getContractFactory("IcicleOptionsUSDToken")
     ).deploy();
     await payment.waitForDeployment();
     paymentAddress = payment.target.toString();
@@ -254,24 +298,24 @@ export async function deployAction(env: Environment) {
   await vaultModule.waitForDeployment();
 
   const coreImplAddress = await resolveImpl(
-    "SignalsCoreImplementation",
-    "SignalsCore",
-    envData.contracts.SignalsCoreImplementation
+    "IcicleOptionsCoreImplementation",
+    "IcicleOptionsCore",
+    envData.contracts.IcicleOptionsCoreImplementation
   );
   const positionImplAddress = await resolveImpl(
-    "SignalsPositionImplementation",
-    "SignalsPosition",
-    envData.contracts.SignalsPositionImplementation
+    "IcicleOptionsPositionImplementation",
+    "IcicleOptionsPosition",
+    envData.contracts.IcicleOptionsPositionImplementation
   );
   const lpShareImplAddress = await resolveImpl(
-    "SignalsLPShareImplementation",
-    "SignalsLPShare",
-    envData.contracts.SignalsLPShareImplementation
+    "IcicleOptionsLPShareImplementation",
+    "IcicleOptionsLPShare",
+    envData.contracts.IcicleOptionsLPShareImplementation
   );
 
   const create2FactoryAddress = await (async () => {
     const existing =
-      envData.contracts.SignalsCreate2Factory ??
+      envData.contracts.IcicleOptionsCreate2Factory ??
       envData.contracts.Create2Factory;
     if (existing) {
       const code = await ethers.provider.getCode(existing);
@@ -279,27 +323,27 @@ export async function deployAction(env: Environment) {
         return existing;
       }
       if (env === "prod") {
-        throw new Error(`SignalsCreate2Factory has no code at ${existing}`);
+        throw new Error(`IcicleOptionsCreate2Factory has no code at ${existing}`);
       }
       console.warn(
-        `[deploy] SignalsCreate2Factory not found at ${existing}; redeploying`
+        `[deploy] IcicleOptionsCreate2Factory not found at ${existing}; redeploying`
       );
     }
     const factory = await (
-      await ethers.getContractFactory("SignalsCreate2Factory")
+      await ethers.getContractFactory("IcicleOptionsCreate2Factory")
     ).deploy(deployer.address);
     await factory.waitForDeployment();
     return factory.target.toString();
   })();
 
   const factoryContract = await ethers.getContractAt(
-    "SignalsCreate2Factory",
+    "IcicleOptionsCreate2Factory",
     create2FactoryAddress
   );
   const allowedDeployer = await factoryContract.allowedDeployer();
   if (allowedDeployer.toLowerCase() !== deployer.address.toLowerCase()) {
     throw new Error(
-      `SignalsCreate2Factory allowedDeployer mismatch: expected ${deployer.address} got ${allowedDeployer}`
+      `IcicleOptionsCreate2Factory allowedDeployer mismatch: expected ${deployer.address} got ${allowedDeployer}`
     );
   }
 
@@ -311,16 +355,16 @@ export async function deployAction(env: Environment) {
     coreImpl: coreImplAddress,
     positionImpl: positionImplAddress,
     lpShareImpl: lpShareImplAddress,
-    release: INPUTS.create2.release,
-    vanityPrefix: INPUTS.create2.vanityPrefix,
-    maxNonce: parseNumber(INPUTS.create2.maxNonce, "CORE_VANITY_MAX_NONCE"),
+    release: inputs.create2.release,
+    vanityPrefix: inputs.create2.vanityPrefix,
+    maxNonce: parseNumber(inputs.create2.maxNonce, "CORE_VANITY_MAX_NONCE"),
   });
 
   const predictedPath = writePredicted(env, prediction);
   console.log(`[deploy] predicted addresses written to ${predictedPath}`);
 
-  const deployerAddress = prediction.contracts.SignalsDeployer;
-  const deployerFactory = await ethers.getContractFactory("SignalsDeployer");
+  const deployerAddress = prediction.contracts.IcicleOptionsDeployer;
+  const deployerFactory = await ethers.getContractFactory("IcicleOptionsDeployer");
   const deployerInitCode = ethers.concat([
     deployerFactory.bytecode,
     ethers.AbiCoder.defaultAbiCoder().encode(["address"], [deployer.address]),
@@ -337,13 +381,13 @@ export async function deployAction(env: Environment) {
 
   const deployerCodeAfter = await ethers.provider.getCode(deployerAddress);
   if (deployerCodeAfter === "0x") {
-    throw new Error(`SignalsDeployer was not deployed at ${deployerAddress}`);
+    throw new Error(`IcicleOptionsDeployer was not deployed at ${deployerAddress}`);
   }
 
   const coreParams = {
     paymentToken: paymentAddress,
-    positionContract: prediction.contracts.SignalsPositionProxy,
-    lpShareToken: prediction.contracts.SignalsLPShareProxy,
+    positionContract: prediction.contracts.IcicleOptionsPositionProxy,
+    lpShareToken: prediction.contracts.IcicleOptionsLPShareProxy,
     tradeModule: tradeModule.target.toString(),
     lifecycleModule: lifecycleModule.target.toString(),
     riskModule: riskModule.target.toString(),
@@ -353,7 +397,7 @@ export async function deployAction(env: Environment) {
     settlementSubmitWindow: submitWindow,
     pendingOpsWindow: pendingOpsWindow,
     claimDelaySeconds: claimDelay,
-    redstoneFeedId: ethers.encodeBytes32String(INPUTS.redstone.feedId),
+    redstoneFeedId: ethers.encodeBytes32String(inputs.redstone.feedId),
     redstoneFeedDecimals: redstoneFeedDecimals,
     maxSampleDistance: redstoneMaxSampleDistance,
     futureTolerance: redstoneFutureTolerance,
@@ -369,7 +413,7 @@ export async function deployAction(env: Environment) {
   };
 
   const deployerContract = await ethers.getContractAt(
-    "SignalsDeployer",
+    "IcicleOptionsDeployer",
     deployerAddress
   );
   const deployAllTx = await deployerContract.deployAllDeterministic(
@@ -379,12 +423,12 @@ export async function deployAction(env: Environment) {
     prediction.create2.salts.CORE_PROXY.salt,
     prediction.create2.salts.POSITION_PROXY.salt,
     prediction.create2.salts.LPSHARE_PROXY.salt,
-    prediction.contracts.SignalsCoreProxy,
-    prediction.contracts.SignalsPositionProxy,
-    prediction.contracts.SignalsLPShareProxy,
+    prediction.contracts.IcicleOptionsCoreProxy,
+    prediction.contracts.IcicleOptionsPositionProxy,
+    prediction.contracts.IcicleOptionsLPShareProxy,
     coreParams,
-    INPUTS.lpShare.name,
-    INPUTS.lpShare.symbol
+    inputs.lpShare.name,
+    inputs.lpShare.symbol
   );
   const deployReceipt = await deployAllTx.wait();
   console.log(
@@ -392,15 +436,15 @@ export async function deployAction(env: Environment) {
   );
 
   updateContracts(env, {
-    SignalsCreate2Factory: create2FactoryAddress,
-    SignalsDeployer: deployerAddress,
-    SignalsCoreProxy: prediction.contracts.SignalsCoreProxy,
-    SignalsCoreImplementation: coreImplAddress,
-    SignalsPositionProxy: prediction.contracts.SignalsPositionProxy,
-    SignalsPositionImplementation: positionImplAddress,
-    SignalsLPShareProxy: prediction.contracts.SignalsLPShareProxy,
-    SignalsLPShareImplementation: lpShareImplAddress,
-    SignalsLPShare: prediction.contracts.SignalsLPShareProxy,
+    IcicleOptionsCreate2Factory: create2FactoryAddress,
+    IcicleOptionsDeployer: deployerAddress,
+    IcicleOptionsCoreProxy: prediction.contracts.IcicleOptionsCoreProxy,
+    IcicleOptionsCoreImplementation: coreImplAddress,
+    IcicleOptionsPositionProxy: prediction.contracts.IcicleOptionsPositionProxy,
+    IcicleOptionsPositionImplementation: positionImplAddress,
+    IcicleOptionsLPShareProxy: prediction.contracts.IcicleOptionsLPShareProxy,
+    IcicleOptionsLPShareImplementation: lpShareImplAddress,
+    IcicleOptionsLPShare: prediction.contracts.IcicleOptionsLPShareProxy,
     TradeModule: tradeModule.target.toString(),
     MarketLifecycleModule: lifecycleModule.target.toString(),
     OracleModule: oracleModule.target.toString(),
@@ -419,12 +463,12 @@ export async function deployAction(env: Environment) {
     settlementSubmitWindow: submitWindow.toString(),
     settlementFinalizeDeadline: claimDelay.toString(),
     pendingOpsWindow: pendingOpsWindow.toString(),
-    redstoneFeedId: INPUTS.redstone.feedId,
+    redstoneFeedId: inputs.redstone.feedId,
     redstoneFeedDecimals,
     redstoneMaxSampleDistance: redstoneMaxSampleDistance.toString(),
     redstoneFutureTolerance: redstoneFutureTolerance.toString(),
-    lpShareTokenName: INPUTS.lpShare.name,
-    lpShareTokenSymbol: INPUTS.lpShare.symbol,
+    lpShareTokenName: inputs.lpShare.name,
+    lpShareTokenSymbol: inputs.lpShare.symbol,
     operatorAllowlist: resolvedOperators,
     owners: {
       core: ownerSafe,

@@ -7,10 +7,10 @@ export async function postFundCheckAction(env: Environment) {
   console.log(`[post-fund-check] environment=${env} network=${network.name}`);
 
   const envData = loadEnvironment(env);
-  const coreAddress = envData.contracts.SignalsCoreProxy;
-  if (!coreAddress) throw new Error("Missing SignalsCoreProxy in environment file");
+  const coreAddress = envData.contracts.IcicleOptionsCoreProxy;
+  if (!coreAddress) throw new Error("Missing IcicleOptionsCoreProxy in environment file");
 
-  const core = await ethers.getContractAt("SignalsCore", coreAddress);
+  const core = await ethers.getContractAt("IcicleOptionsCore", coreAddress);
   const seeded = await core.isVaultSeeded();
   if (!seeded) throw new Error("Vault is not seeded");
 

@@ -80,11 +80,11 @@ async function main() {
   console.log(`[settle-market-dev] environment=${env} network=${network.name}`);
 
   const envData = loadEnvironment(env);
-  const coreAddress = envData.contracts.SignalsCoreProxy;
-  if (!coreAddress) throw new Error("Missing SignalsCoreProxy in environment file");
+  const coreAddress = envData.contracts.IcicleOptionsCoreProxy;
+  if (!coreAddress) throw new Error("Missing IcicleOptionsCoreProxy in environment file");
 
   const [deployer] = await ethers.getSigners();
-  const core = await ethers.getContractAt("SignalsCore", coreAddress, deployer);
+  const core = await ethers.getContractAt("IcicleOptionsCore", coreAddress, deployer);
 
   const rpcUrl = (network.config as { url?: string }).url;
   if (!rpcUrl) throw new Error("Missing RPC URL in network config");

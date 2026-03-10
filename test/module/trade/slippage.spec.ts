@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { deployMinimalTradeSystem } from "../../helpers/deploy";
-import { ISignalsCore } from "../../../typechain-types/contracts/testonly/TradeModuleProxy";
+import { IIcicleOptionsCore } from "../../../typechain-types/contracts/testonly/TradeModuleProxy";
 import { WAD } from "../../helpers/constants";
 
 describe("TradeModule slippage and bounds", () => {
@@ -56,7 +56,7 @@ describe("TradeModule slippage and bounds", () => {
     
     // Get current market and update to settled state
     const now = (await ethers.provider.getBlock("latest"))!.timestamp;
-    const settledMarket: ISignalsCore.MarketStruct = {
+    const settledMarket: IIcicleOptionsCore.MarketStruct = {
       isSeeded: true,
       settled: true,
       snapshotChunksDone: false,

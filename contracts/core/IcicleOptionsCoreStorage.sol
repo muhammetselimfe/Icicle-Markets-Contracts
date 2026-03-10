@@ -2,11 +2,11 @@
 pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "../interfaces/ISignalsCore.sol";
-import "../interfaces/ISignalsPosition.sol";
+import "../interfaces/IIcicleOptionsCore.sol";
+import "../interfaces/IIcicleOptionsPosition.sol";
 import "../lib/LazyMulSegmentTree.sol";
 
-abstract contract SignalsCoreStorage {
+abstract contract IcicleOptionsCoreStorage {
     // ============================================================
     // Events (Capital Stack Funding)
     // ============================================================
@@ -78,12 +78,12 @@ abstract contract SignalsCoreStorage {
     mapping(address => bool) internal _operators;
 
     IERC20 public paymentToken;
-    ISignalsPosition public positionContract;
+    IIcicleOptionsPosition public positionContract;
     
     /// @notice LP Share token (ERC-4626 compatible)
     address public lpShareToken;
 
-    mapping(uint256 => ISignalsCore.Market) public markets;
+    mapping(uint256 => IIcicleOptionsCore.Market) public markets;
     mapping(uint256 => LazyMulSegmentTree.Tree) public marketTrees;
     uint256 public nextMarketId;
 

@@ -2,14 +2,14 @@ import { ethers } from "hardhat";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import {
   MockFeePolicy,
-  SignalsUSDToken,
+  IcicleOptionsUSDToken,
   LPVaultModule,
   MarketLifecycleModule,
   OracleModuleHarness,
   RiskModule,
-  SignalsCore,
-  SignalsLPShare,
-  SignalsPosition,
+  IcicleOptionsCore,
+  IcicleOptionsLPShare,
+  IcicleOptionsPosition,
   TradeModule,
 } from "../../typechain-types";
 import { DATA_FEED_ID, FEED_DECIMALS } from "./redstone";
@@ -18,16 +18,16 @@ import { WAD } from "./constants";
 export interface FullSystem {
   owner: HardhatEthersSigner;
   users: HardhatEthersSigner[];
-  payment: SignalsUSDToken;
+  payment: IcicleOptionsUSDToken;
   feePolicy: MockFeePolicy;
-  core: SignalsCore;
-  position: SignalsPosition;
+  core: IcicleOptionsCore;
+  position: IcicleOptionsPosition;
   tradeModule: TradeModule;
   lifecycleModule: MarketLifecycleModule;
   oracleModule: OracleModuleHarness;
   riskModule: RiskModule;
   vaultModule: LPVaultModule;
-  lpShare: SignalsLPShare;
+  lpShare: IcicleOptionsLPShare;
   lazyLibrary: string;
 }
 
@@ -55,8 +55,8 @@ export async function deployFullSystem(
   const users = signers.slice(1, 6);
 
   const payment = (await (
-    await ethers.getContractFactory("SignalsUSDToken")
-  ).deploy()) as SignalsUSDToken;
+    await ethers.getContractFactory("IcicleOptionsUSDToken")
+  ).deploy()) as IcicleOptionsUSDToken;
 
   const feePolicy = (await (
     await ethers.getContractFactory("MockFeePolicy")
@@ -90,15 +90,15 @@ export async function deployFullSystem(
     await ethers.getContractFactory("LPVaultModule")
   ).deploy()) as LPVaultModule;
 
-  const positionImplFactory = await ethers.getContractFactory("SignalsPosition");
+  const positionImplFactory = await ethers.getContractFactory("IcicleOptionsPosition");
   const positionImpl = await positionImplFactory.deploy();
   await positionImpl.waitForDeployment();
 
-  const lpShareImplFactory = await ethers.getContractFactory("SignalsLPShare");
+  const lpShareImplFactory = await ethers.getContractFactory("IcicleOptionsLPShare");
   const lpShareImpl = await lpShareImplFactory.deploy();
   await lpShareImpl.waitForDeployment();
 
-  const coreImplFactory = await ethers.getContractFactory("SignalsCore");
+  const coreImplFactory = await ethers.getContractFactory("IcicleOptionsCore");
   const coreImpl = await coreImplFactory.deploy();
   await coreImpl.waitForDeployment();
 
@@ -108,20 +108,20 @@ export async function deployFullSystem(
   const coreProxy = await proxyFactory.deploy(coreImpl.target, "0x");
 
   const position = (await ethers.getContractAt(
-    "SignalsPosition",
+    "IcicleOptionsPosition",
     await positionProxy.getAddress()
-  )) as SignalsPosition;
+  )) as IcicleOptionsPosition;
   const lpShare = (await ethers.getContractAt(
-    "SignalsLPShare",
+    "IcicleOptionsLPShare",
     await lpShareProxy.getAddress()
-  )) as SignalsLPShare;
+  )) as IcicleOptionsLPShare;
   const core = (await ethers.getContractAt(
-    "SignalsCore",
+    "IcicleOptionsCore",
     await coreProxy.getAddress()
-  )) as SignalsCore;
+  )) as IcicleOptionsCore;
 
   const feedId = ethers.encodeBytes32String(DATA_FEED_ID);
-  const coreParams: SignalsCore.InitParamsStruct = {
+  const coreParams: IcicleOptionsCore.InitParamsStruct = {
     paymentToken: payment.target.toString(),
     positionContract: await position.getAddress(),
     lpShareToken: await lpShare.getAddress(),
@@ -153,8 +153,8 @@ export async function deployFullSystem(
   await lpShare.initialize(
     await core.getAddress(),
     payment.target.toString(),
-    "Signals LP",
-    "SIGLP",
+    "Icicle Options LP",
+    "ICOLP",
     owner.address
   );
 

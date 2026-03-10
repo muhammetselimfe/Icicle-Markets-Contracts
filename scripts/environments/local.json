@@ -2,10 +2,10 @@
   "network": "local",
   "version": 9,
   "contracts": {
-    "SignalsCoreProxy": "0x516d2276E096Edd986857f0D0f7a57Bce30adde6",
-    "SignalsCoreImplementation": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82",
-    "SignalsPositionProxy": "0x192EC1c64FE909b6181909B044CbB1edbA5c16D0",
-    "SignalsPositionImplementation": "0x9A676e781A523b5d0C0e43731313A708CB607508",
+    "IcicleOptionsCoreProxy": "0x516d2276E096Edd986857f0D0f7a57Bce30adde6",
+    "IcicleOptionsCoreImplementation": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82",
+    "IcicleOptionsPositionProxy": "0x192EC1c64FE909b6181909B044CbB1edbA5c16D0",
+    "IcicleOptionsPositionImplementation": "0x9A676e781A523b5d0C0e43731313A708CB607508",
     "TradeModule": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
     "MarketLifecycleModule": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
     "OracleModule": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
@@ -17,11 +17,11 @@
     "FeePolicy50bps": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
     "FeePolicy100bps": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
     "FeePolicy200bps": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
-    "SignalsLPShare": "0x770D43Fe749daA4B604871A0B76B6A34dA8D8E76",
-    "SignalsCreate2Factory": "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1",
-    "SignalsDeployer": "0x582d1dc07BE9Dd370d0Fc1dc7Bb1FA05ACc3F897",
-    "SignalsLPShareProxy": "0x770D43Fe749daA4B604871A0B76B6A34dA8D8E76",
-    "SignalsLPShareImplementation": "0x0B306BF915C4d645ff596e518fAf3F9669b97016",
+    "IcicleOptionsLPShare": "0x770D43Fe749daA4B604871A0B76B6A34dA8D8E76",
+    "IcicleOptionsCreate2Factory": "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1",
+    "IcicleOptionsDeployer": "0x582d1dc07BE9Dd370d0Fc1dc7Bb1FA05ACc3F897",
+    "IcicleOptionsLPShareProxy": "0x770D43Fe749daA4B604871A0B76B6A34dA8D8E76",
+    "IcicleOptionsLPShareImplementation": "0x0B306BF915C4d645ff596e518fAf3F9669b97016",
     "PaymentToken": "0x5FbDB2315678afecb367f032d93F642f64180aa3"
   },
   "config": {
@@ -37,8 +37,8 @@
     "redstoneFeedDecimals": 8,
     "redstoneMaxSampleDistance": "600",
     "redstoneFutureTolerance": "60",
-    "lpShareTokenName": "Signals LP",
-    "lpShareTokenSymbol": "SIGLP",
+    "lpShareTokenName": "Icicle Options LP",
+    "lpShareTokenSymbol": "ICOLP",
     "operatorAllowlist": [
       "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
     ],

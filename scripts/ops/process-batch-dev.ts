@@ -8,11 +8,11 @@ async function main() {
   console.log(`[process-batch-dev] environment=${env} network=${network.name}`);
 
   const envData = loadEnvironment(env);
-  const coreAddress = envData.contracts.SignalsCoreProxy;
-  if (!coreAddress) throw new Error("Missing SignalsCoreProxy in environment file");
+  const coreAddress = envData.contracts.IcicleOptionsCoreProxy;
+  if (!coreAddress) throw new Error("Missing IcicleOptionsCoreProxy in environment file");
 
   const [deployer] = await ethers.getSigners();
-  const core = await ethers.getContractAt("SignalsCore", coreAddress, deployer);
+  const core = await ethers.getContractAt("IcicleOptionsCore", coreAddress, deployer);
 
   let currentBatchId = await core.currentBatchId();
 

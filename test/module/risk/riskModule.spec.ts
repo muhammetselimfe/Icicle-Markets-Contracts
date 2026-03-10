@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { SignalsCoreHarness, SignalsCore, SignalsUSDToken, MockSignalsPosition, RiskModule } from '../../../typechain-types';
+import { IcicleOptionsCoreHarness, IcicleOptionsCore, IcicleOptionsUSDToken, MockIcicleOptionsPosition, RiskModule } from '../../../typechain-types';
 
 /**
  * RiskModule Tests (TDD)
@@ -27,10 +27,10 @@ const LAMBDA = ethers.parseEther("0.3"); // 30% NAV loss floor (pdd = -λ)
 const K_DD = ethers.parseEther("1"); // Drawdown sensitivity factor
 
 describe("RiskModule", () => {
-  let core: SignalsCoreHarness;
+  let core: IcicleOptionsCoreHarness;
   let riskModule: RiskModule;
-  let payment: SignalsUSDToken;
-  let position: MockSignalsPosition;
+  let payment: IcicleOptionsUSDToken;
+  let position: MockIcicleOptionsPosition;
   let owner: Awaited<ReturnType<typeof ethers.getSigners>>[0];
 
   async function deployFixture() {
@@ -38,10 +38,10 @@ describe("RiskModule", () => {
     owner = _owner;
 
     payment = await (
-      await ethers.getContractFactory("SignalsUSDToken")
+      await ethers.getContractFactory("IcicleOptionsUSDToken")
     ).deploy();
     position = await (
-      await ethers.getContractFactory("MockSignalsPosition")
+      await ethers.getContractFactory("MockIcicleOptionsPosition")
     ).deploy();
     const lazyLib = await (
       await ethers.getContractFactory("LazyMulSegmentTree")
@@ -50,9 +50,9 @@ describe("RiskModule", () => {
     // Deploy RiskModule
     riskModule = await (await ethers.getContractFactory("RiskModule")).deploy();
 
-    // Deploy SignalsCoreHarness with modules
+    // Deploy IcicleOptionsCoreHarness with modules
     const coreImpl = await (
-      await ethers.getContractFactory("SignalsCoreHarness", {
+      await ethers.getContractFactory("IcicleOptionsCoreHarness", {
         libraries: { LazyMulSegmentTree: lazyLib.target },
       })
     ).deploy();
@@ -76,7 +76,7 @@ describe("RiskModule", () => {
     ).deploy();
 
     const lpShareImpl = await (
-      await ethers.getContractFactory("SignalsLPShare")
+      await ethers.getContractFactory("IcicleOptionsLPShare")
     ).deploy();
     const proxyFactory = await ethers.getContractFactory("TestERC1967Proxy");
     const lpShareProxy = await proxyFactory.deploy(
@@ -85,19 +85,19 @@ describe("RiskModule", () => {
     );
     const coreProxy = await proxyFactory.deploy(coreImpl.target, "0x");
     const lpShare = await ethers.getContractAt(
-      "SignalsLPShare",
+      "IcicleOptionsLPShare",
       await lpShareProxy.getAddress()
     );
     core = (await ethers.getContractAt(
-      "SignalsCoreHarness",
+      "IcicleOptionsCoreHarness",
       coreProxy.target
-    )) as SignalsCoreHarness;
+    )) as IcicleOptionsCoreHarness;
 
     const submitWindow = 120;
     const opsWindow = 60;
     const claimDelay = submitWindow + opsWindow;
     const feedId = ethers.encodeBytes32String("BTC");
-    const coreParams: SignalsCore.InitParamsStruct = {
+    const coreParams: IcicleOptionsCore.InitParamsStruct = {
       paymentToken: payment.target.toString(),
       positionContract: position.target.toString(),
       lpShareToken: await lpShare.getAddress(),
@@ -128,7 +128,7 @@ describe("RiskModule", () => {
     await lpShare.initialize(
       await core.getAddress(),
       payment.target.toString(),
-      "Signals LP Share",
+      "Icicle Options LP Share",
       "sLP",
       owner.address
     );
@@ -472,9 +472,9 @@ describe("RiskModule", () => {
   // Trade α Enforcement - Design Decision
   // ============================================================
   // "No per-trade α gate"
-  // - α is enforced at market creation (createMarket) via SignalsCore -> RiskModule.gateCreateMarket
+  // - α is enforced at market creation (createMarket) via IcicleOptionsCore -> RiskModule.gateCreateMarket
   // - Trading is free within the α/prior set at market creation time
-  // - RiskModule provides CALCULATION helpers; enforcement is triggered by SignalsCore before delegating to MarketLifecycleModule
+  // - RiskModule provides CALCULATION helpers; enforcement is triggered by IcicleOptionsCore before delegating to MarketLifecycleModule
   // - Integration tests in alphaEnforcement.spec.ts verify this behavior
   // ============================================================
 

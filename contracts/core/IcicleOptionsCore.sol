@@ -8,19 +8,19 @@ import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "./SignalsCoreStorage.sol";
-import "../interfaces/ISignalsCore.sol";
-import "../interfaces/ISignalsPosition.sol";
+import "./IcicleOptionsCoreStorage.sol";
+import "../interfaces/IIcicleOptionsCore.sol";
+import "../interfaces/IIcicleOptionsPosition.sol";
 import "../interfaces/IRiskModule.sol";
-import "../errors/SignalsErrors.sol";
+import "../errors/IcicleOptionsErrors.sol";
 
-/// @title SignalsCore
+/// @title IcicleOptionsCore
 /// @notice Upgradeable entry core that holds storage and delegates to modules
-contract SignalsCore is
+contract IcicleOptionsCore is
     Initializable,
-    ISignalsCore,
-    SignalsCoreStorage,
-    SignalsErrors,
+    IIcicleOptionsCore,
+    IcicleOptionsCoreStorage,
+    IcicleOptionsErrors,
     UUPSUpgradeable,
     OwnableUpgradeable,
     PausableUpgradeable,
@@ -49,10 +49,10 @@ contract SignalsCore is
         // Pause is an incident-response switch.
         // While paused, restrict operator actions and require owner-only.
         if (paused()) {
-            if (msg.sender != owner()) revert SignalsErrors.UnauthorizedCaller(msg.sender);
+            if (msg.sender != owner()) revert IcicleOptionsErrors.UnauthorizedCaller(msg.sender);
         } else {
             if (msg.sender != owner() && !_operators[msg.sender]) {
-                revert SignalsErrors.UnauthorizedCaller(msg.sender);
+                revert IcicleOptionsErrors.UnauthorizedCaller(msg.sender);
             }
         }
         _;
@@ -93,7 +93,7 @@ contract SignalsCore is
 
     /// @notice Core initializer
     function initialize(InitParams calldata params) external initializer {
-        if (params.ownerSafe == address(0)) revert SignalsErrors.ZeroAddress();
+        if (params.ownerSafe == address(0)) revert IcicleOptionsErrors.ZeroAddress();
         __Ownable_init(params.ownerSafe);
         __UUPSUpgradeable_init();
         __Pausable_init();
@@ -118,19 +118,19 @@ contract SignalsCore is
         _requireContract(params.oracleModule);
 
         if (params.claimDelaySeconds != params.settlementSubmitWindow + params.pendingOpsWindow) {
-            revert SignalsErrors.InvalidSettlementTimeline(
+            revert IcicleOptionsErrors.InvalidSettlementTimeline(
                 params.claimDelaySeconds,
                 params.settlementSubmitWindow,
                 params.pendingOpsWindow
             );
         }
         if (params.phiLP + params.phiBS + params.phiTR != WAD) {
-            revert SignalsErrors.InvalidFeeSplitSum(params.phiLP, params.phiBS, params.phiTR);
+            revert IcicleOptionsErrors.InvalidFeeSplitSum(params.phiLP, params.phiBS, params.phiTR);
         }
-        if (params.lambda == 0 || params.lambda >= WAD) revert SignalsErrors.InvalidLambda(params.lambda);
+        if (params.lambda == 0 || params.lambda >= WAD) revert IcicleOptionsErrors.InvalidLambda(params.lambda);
 
         paymentToken = IERC20(params.paymentToken);
-        positionContract = ISignalsPosition(params.positionContract);
+        positionContract = IIcicleOptionsPosition(params.positionContract);
         lpShareToken = params.lpShareToken;
         tradeModule = params.tradeModule;
         lifecycleModule = params.lifecycleModule;
@@ -160,7 +160,7 @@ contract SignalsCore is
         uint256 operatorCount = params.operatorAllowlist.length;
         for (uint256 i = 0; i < operatorCount; i++) {
             address operator = params.operatorAllowlist[i];
-            if (operator == address(0)) revert SignalsErrors.ZeroAddress();
+            if (operator == address(0)) revert IcicleOptionsErrors.ZeroAddress();
             _operators[operator] = true;
             emit OperatorUpdated(operator, true);
         }
@@ -202,7 +202,7 @@ contract SignalsCore is
 
     /// @notice Add or remove operator from allowlist
     function setOperator(address operator, bool allowed) external onlyOwner {
-        if (operator == address(0)) revert SignalsErrors.ZeroAddress();
+        if (operator == address(0)) revert IcicleOptionsErrors.ZeroAddress();
         _operators[operator] = allowed;
         emit OperatorUpdated(operator, allowed);
     }
@@ -246,7 +246,7 @@ contract SignalsCore is
         uint256 phiBS,
         uint256 phiTR
     ) external onlyOwner {
-        if (phiLP + phiBS + phiTR != WAD) revert SignalsErrors.InvalidFeeSplitSum(phiLP, phiBS, phiTR);
+        if (phiLP + phiBS + phiTR != WAD) revert IcicleOptionsErrors.InvalidFeeSplitSum(phiLP, phiBS, phiTR);
         // pdd is NOT set here - it's controlled by setRiskConfig (pdd := -λ)
         feeWaterfallConfig.rhoBS = rhoBS;
         feeWaterfallConfig.phiLP = phiLP;
@@ -290,7 +290,7 @@ contract SignalsCore is
         // λ must be in (0, 1) for safety invariants
         // λ = 0 would mean no NAV loss limit (unsafe)
         // λ >= 1 would mean floor cannot be maintained (100%+ drop allowed is meaningless)
-        if (lambda == 0 || lambda >= WAD) revert SignalsErrors.InvalidLambda(lambda);
+        if (lambda == 0 || lambda >= WAD) revert IcicleOptionsErrors.InvalidLambda(lambda);
 
         riskConfig.lambda = lambda;
         riskConfig.kDrawdown = kDrawdown;
@@ -319,7 +319,7 @@ contract SignalsCore is
         ));
 
         bytes memory ret = _delegate(tradeModule, abi.encodeCall(
-            ISignalsCore.openPosition,
+            IIcicleOptionsCore.openPosition,
             (marketId, lowerTick, upperTick, quantity, maxCost)
         ));
         if (ret.length > 0) positionId = abi.decode(ret, (uint256));
@@ -337,7 +337,7 @@ contract SignalsCore is
         ));
 
         _delegate(tradeModule, abi.encodeCall(
-            ISignalsCore.increasePosition,
+            IIcicleOptionsCore.increasePosition,
             (positionId, quantity, maxCost)
         ));
     }
@@ -348,7 +348,7 @@ contract SignalsCore is
         uint256 minProceeds
     ) external override whenNotPaused nonReentrant {
         _delegate(tradeModule, abi.encodeCall(
-            ISignalsCore.decreasePosition,
+            IIcicleOptionsCore.decreasePosition,
             (positionId, quantity, minProceeds)
         ));
     }
@@ -358,7 +358,7 @@ contract SignalsCore is
         uint256 minProceeds
     ) external override whenNotPaused nonReentrant {
         _delegate(tradeModule, abi.encodeCall(
-            ISignalsCore.closePosition,
+            IIcicleOptionsCore.closePosition,
             (positionId, minProceeds)
         ));
     }
@@ -366,13 +366,13 @@ contract SignalsCore is
     /// @notice Claim payout from settled position
     /// @dev Allowed even when paused - user funds should always be claimable after settlement
     function claimPayout(uint256 positionId) external override nonReentrant {
-        _delegate(tradeModule, abi.encodeCall(ISignalsCore.claimPayout, (positionId)));
+        _delegate(tradeModule, abi.encodeCall(IIcicleOptionsCore.claimPayout, (positionId)));
     }
 
     /// @notice Batch claim payouts from multiple settled positions
     /// @dev Allowed even when paused - user funds should always be claimable after settlement
     function batchClaimPayout(uint256[] calldata positionIds) external override nonReentrant {
-        _delegate(tradeModule, abi.encodeCall(ISignalsCore.batchClaimPayout, (positionIds)));
+        _delegate(tradeModule, abi.encodeCall(IIcicleOptionsCore.batchClaimPayout, (positionIds)));
     }
 
     // ---- View stubs ----
@@ -384,7 +384,7 @@ contract SignalsCore is
         uint128 quantity
     ) external override returns (uint256 cost) {
         bytes memory ret = _delegateView(tradeModule, abi.encodeCall(
-            ISignalsCore.calculateOpenCost,
+            IIcicleOptionsCore.calculateOpenCost,
             (marketId, lowerTick, upperTick, quantity)
         ));
         if (ret.length > 0) cost = abi.decode(ret, (uint256));
@@ -395,7 +395,7 @@ contract SignalsCore is
         uint128 quantity
     ) external override returns (uint256 cost) {
         bytes memory ret = _delegateView(tradeModule, abi.encodeCall(
-            ISignalsCore.calculateIncreaseCost,
+            IIcicleOptionsCore.calculateIncreaseCost,
             (positionId, quantity)
         ));
         if (ret.length > 0) cost = abi.decode(ret, (uint256));
@@ -406,7 +406,7 @@ contract SignalsCore is
         uint128 quantity
     ) external override returns (uint256 proceeds) {
         bytes memory ret = _delegateView(tradeModule, abi.encodeCall(
-            ISignalsCore.calculateDecreaseProceeds,
+            IIcicleOptionsCore.calculateDecreaseProceeds,
             (positionId, quantity)
         ));
         if (ret.length > 0) proceeds = abi.decode(ret, (uint256));
@@ -416,7 +416,7 @@ contract SignalsCore is
         uint256 positionId
     ) external override returns (uint256 proceeds) {
         bytes memory ret = _delegateView(tradeModule, abi.encodeCall(
-            ISignalsCore.calculateCloseProceeds,
+            IIcicleOptionsCore.calculateCloseProceeds,
             (positionId)
         ));
         if (ret.length > 0) proceeds = abi.decode(ret, (uint256));
@@ -426,7 +426,7 @@ contract SignalsCore is
         uint256 positionId
     ) external override returns (uint256 value) {
         bytes memory ret = _delegateView(tradeModule, abi.encodeCall(
-            ISignalsCore.calculatePositionValue,
+            IIcicleOptionsCore.calculatePositionValue,
             (positionId)
         ));
         if (ret.length > 0) value = abi.decode(ret, (uint256));
@@ -548,7 +548,7 @@ contract SignalsCore is
         uint64 _claimDelay
     ) external onlyOwner {
         if (_claimDelay != _sampleWindow + _opsWindow) {
-            revert SignalsErrors.InvalidSettlementTimeline(_claimDelay, _sampleWindow, _opsWindow);
+            revert IcicleOptionsErrors.InvalidSettlementTimeline(_claimDelay, _sampleWindow, _opsWindow);
         }
         settlementSubmitWindow = _sampleWindow;
         pendingOpsWindow = _opsWindow;
@@ -760,18 +760,18 @@ contract SignalsCore is
     }
 
     function _requireAddress(address value) internal pure {
-        if (value == address(0)) revert SignalsErrors.ZeroAddress();
+        if (value == address(0)) revert IcicleOptionsErrors.ZeroAddress();
     }
 
     function _requireContract(address value) internal view {
-        if (value.code.length == 0) revert SignalsErrors.ModuleNotSet();
+        if (value.code.length == 0) revert IcicleOptionsErrors.ModuleNotSet();
     }
 
     // --- Internal: delegate helpers ---
 
     /// @dev Delegate to a module preserving context, bubble up revert
     function _delegate(address module, bytes memory callData) internal returns (bytes memory) {
-        if (module == address(0)) revert SignalsErrors.ModuleNotSet();
+        if (module == address(0)) revert IcicleOptionsErrors.ModuleNotSet();
         (bool success, bytes memory ret) = module.delegatecall(callData);
         if (!success) {
             assembly ("memory-safe") {
@@ -784,7 +784,7 @@ contract SignalsCore is
     /// @dev Delegate to a module for view-like paths; bubble up reverts.
     /// @notice Uses delegatecall to access storage in Core's context.
     function _delegateView(address module, bytes memory callData) internal returns (bytes memory) {
-        if (module == address(0)) revert SignalsErrors.ModuleNotSet();
+        if (module == address(0)) revert IcicleOptionsErrors.ModuleNotSet();
         (bool success, bytes memory ret) = module.delegatecall(callData);
         if (!success) {
             assembly ("memory-safe") {
@@ -801,7 +801,7 @@ contract SignalsCore is
     /// @dev Execute risk gate via delegatecall, bubble up revert
     /// @param gateCalldata Encoded call to RiskModule gate function
     function _riskGate(bytes memory gateCalldata) internal {
-        if (riskModule == address(0)) revert SignalsErrors.ModuleNotSet();
+        if (riskModule == address(0)) revert IcicleOptionsErrors.ModuleNotSet();
         (bool success, bytes memory ret) = riskModule.delegatecall(gateCalldata);
         if (!success) {
             assembly ("memory-safe") {

@@ -17,8 +17,8 @@ export async function fundBackstopAction(env: Environment) {
   const [deployer] = await ethers.getSigners();
 
   const envData = loadEnvironment(env);
-  const coreAddress = envData.contracts.SignalsCoreProxy;
-  if (!coreAddress) throw new Error("Missing SignalsCoreProxy in environment file");
+  const coreAddress = envData.contracts.IcicleOptionsCoreProxy;
+  if (!coreAddress) throw new Error("Missing IcicleOptionsCoreProxy in environment file");
 
   const paymentTokenAddress = envData.contracts.PaymentToken;
   if (!paymentTokenAddress) throw new Error("Missing PaymentToken (payment token) in environment file");
@@ -36,7 +36,7 @@ export async function fundBackstopAction(env: Environment) {
     throw new Error(`paymentToken.decimals must be 6 (got ${decimals})`);
   }
 
-  const core = await ethers.getContractAt("SignalsCore", coreAddress);
+  const core = await ethers.getContractAt("IcicleOptionsCore", coreAddress);
   const [backstopNav] = await core.getCapitalStack();
   if (backstopNav > 0n) {
     console.log(`[fund-backstop] backstop already funded (nav=${backstopNav.toString()}); skipping`);

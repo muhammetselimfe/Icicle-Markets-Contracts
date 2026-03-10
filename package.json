@@ -1,8 +1,8 @@
 {
-  "name": "signals-v1",
+  "name": "icicle-options-v1",
   "version": "0.0.0",
   "private": true,
-  "description": "Signals: CLMSR-based Daily Bitcoin Range Markets",
+  "description": "Icicle Options: CLMSR-based Daily Bitcoin Range Markets",
   "license": "MIT",
   "scripts": {
     "postinstall": "patch-package",
@@ -24,7 +24,10 @@
     "safety-check:dev": "MANIFEST_DEFAULT_DIR=.openzeppelin/dev COMMAND=safety-check:dev hardhat run scripts/dispatcher.ts --network dev",
     "safety-check:prod": "MANIFEST_DEFAULT_DIR=.openzeppelin/prod COMMAND=safety-check:prod hardhat run scripts/dispatcher.ts --network prod",
     "verify:dev": "MANIFEST_DEFAULT_DIR=.openzeppelin/dev COMMAND=verify:dev hardhat run scripts/dispatcher.ts --network dev",
-    "verify:prod": "MANIFEST_DEFAULT_DIR=.openzeppelin/prod STRICT_VERIFY=1 COMMAND=verify:prod hardhat run scripts/dispatcher.ts --network prod"
+    "verify:prod": "MANIFEST_DEFAULT_DIR=.openzeppelin/prod STRICT_VERIFY=1 COMMAND=verify:prod hardhat run scripts/dispatcher.ts --network prod",
+    "deploy:fuji": "MANIFEST_DEFAULT_DIR=.openzeppelin/fuji COMMAND=deploy:fuji hardhat run scripts/dispatcher.ts --network fuji",
+    "safety-check:fuji": "MANIFEST_DEFAULT_DIR=.openzeppelin/fuji COMMAND=safety-check:fuji hardhat run scripts/dispatcher.ts --network fuji",
+    "verify:fuji": "MANIFEST_DEFAULT_DIR=.openzeppelin/fuji COMMAND=verify:fuji hardhat run scripts/dispatcher.ts --network fuji"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
@@ -63,6 +66,7 @@
     "typescript": "^5.4.0"
   },
   "dependencies": {
-    "@prb/math": "^4.1.0"
+    "@prb/math": "^4.1.0",
+    "micro-packed": "^0.8.0"
   }
 }

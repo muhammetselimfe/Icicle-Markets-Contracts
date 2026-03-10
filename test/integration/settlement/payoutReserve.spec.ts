@@ -13,7 +13,7 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { LazyMulSegmentTree, LPVaultModule, MarketLifecycleModule, MockFeePolicy, MockERC20, MockSignalsPosition, OracleModule, SignalsCoreHarness, SignalsCore, SignalsLPShare, TestERC1967Proxy, TradeModule } from '../../../typechain-types';
+import { LazyMulSegmentTree, LPVaultModule, MarketLifecycleModule, MockFeePolicy, MockERC20, MockIcicleOptionsPosition, OracleModule, IcicleOptionsCoreHarness, IcicleOptionsCore, IcicleOptionsLPShare, TestERC1967Proxy, TradeModule } from '../../../typechain-types';
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import {
   DATA_FEED_ID,
@@ -57,8 +57,8 @@ describe("PayoutReserve Spec Tests", () => {
     )) as MockERC20;
 
     const position = (await (
-      await ethers.getContractFactory("MockSignalsPosition")
-    ).deploy()) as MockSignalsPosition;
+      await ethers.getContractFactory("MockIcicleOptionsPosition")
+    ).deploy()) as MockIcicleOptionsPosition;
 
     const lazy = (await (
       await ethers.getContractFactory("LazyMulSegmentTree")
@@ -88,10 +88,10 @@ describe("PayoutReserve Spec Tests", () => {
     const risk = await (await ethers.getContractFactory("RiskModule")).deploy();
 
     const coreImpl = (await (
-      await ethers.getContractFactory("SignalsCoreHarness", {
+      await ethers.getContractFactory("IcicleOptionsCoreHarness", {
         libraries: { LazyMulSegmentTree: lazy.target },
       })
-    ).deploy()) as SignalsCoreHarness;
+    ).deploy()) as IcicleOptionsCoreHarness;
 
     const submitWindow = 300;
     const opsWindow = 60;
@@ -100,7 +100,7 @@ describe("PayoutReserve Spec Tests", () => {
     await feePolicy.waitForDeployment();
 
     const lpShareImpl = await (
-      await ethers.getContractFactory("SignalsLPShare")
+      await ethers.getContractFactory("IcicleOptionsLPShare")
     ).deploy();
     const proxyFactory = await ethers.getContractFactory("TestERC1967Proxy");
     const lpShareProxy = (await proxyFactory.deploy(
@@ -112,15 +112,15 @@ describe("PayoutReserve Spec Tests", () => {
       "0x"
     )) as TestERC1967Proxy;
     const lpShare = (await ethers.getContractAt(
-      "SignalsLPShare",
+      "IcicleOptionsLPShare",
       await lpShareProxy.getAddress()
-    )) as SignalsLPShare;
+    )) as IcicleOptionsLPShare;
     const core = (await ethers.getContractAt(
-      "SignalsCoreHarness",
+      "IcicleOptionsCoreHarness",
       await coreProxy.getAddress()
-    )) as SignalsCoreHarness;
+    )) as IcicleOptionsCoreHarness;
 
-    const coreParams: SignalsCore.InitParamsStruct = {
+    const coreParams: IcicleOptionsCore.InitParamsStruct = {
       paymentToken: payment.target.toString(),
       positionContract: position.target.toString(),
       lpShareToken: await lpShare.getAddress(),
@@ -151,7 +151,7 @@ describe("PayoutReserve Spec Tests", () => {
     await lpShare.initialize(
       await core.getAddress(),
       payment.target.toString(),
-      "Signals LP Share",
+      "Icicle Options LP Share",
       "sLP",
       owner.address
     );
@@ -176,7 +176,7 @@ describe("PayoutReserve Spec Tests", () => {
   }
 
   async function setupMarketWithPosition(
-    core: SignalsCoreHarness,
+    core: IcicleOptionsCoreHarness,
     seeder: HardhatEthersSigner,
     feePolicyAddress: string,
     _winningTick: number = 1
@@ -708,7 +708,7 @@ describe("PayoutReserve Spec Tests", () => {
   // Failure Path + Batch/Claim Separation
   // ==================================================================
   describe("Failure Path & Batch/Claim Separation", () => {
-    let core: SignalsCoreHarness;
+    let core: IcicleOptionsCoreHarness;
     let payment: MockERC20;
     let seeder: HardhatEthersSigner;
     let feePolicy: MockFeePolicy;

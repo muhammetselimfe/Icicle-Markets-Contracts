@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-interface ISignalsPosition {
+interface IIcicleOptionsPosition {
     struct Position {
         uint256 marketId;
         int256 lowerTick;

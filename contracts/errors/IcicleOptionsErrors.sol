@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-/// @title SignalsErrors
-/// @notice Single error registry for the entire Signals Protocol
-/// @dev All custom errors are defined here. Import with alias: `import {SignalsErrors as SE} from "..."`
-interface SignalsErrors {
+/// @title IcicleOptionsErrors
+/// @notice Single error registry for the entire Icicle Options Protocol
+/// @dev All custom errors are defined here. Import with alias: `import {IcicleOptionsErrors as SE} from "..."`
+interface IcicleOptionsErrors {
     // ============================================================
     // Module / Wiring
     // ============================================================

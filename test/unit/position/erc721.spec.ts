@@ -2,12 +2,12 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { Signer } from "ethers";
-import { SignalsPosition, SignalsUSDToken } from "../../../typechain-types";
+import { IcicleOptionsPosition, IcicleOptionsUSDToken } from "../../../typechain-types";
 
 async function deployCoreSigner(): Promise<{ address: string; signer: Signer }> {
   const token = (await (
-    await ethers.getContractFactory("SignalsUSDToken")
-  ).deploy()) as SignalsUSDToken;
+    await ethers.getContractFactory("IcicleOptionsUSDToken")
+  ).deploy()) as IcicleOptionsUSDToken;
   await token.waitForDeployment();
   const address = await token.getAddress();
   await ethers.provider.send("hardhat_impersonateAccount", [address]);
@@ -20,7 +20,7 @@ async function deployCoreSigner(): Promise<{ address: string; signer: Signer }> 
 }
 
 /**
- * ERC721 Standard Tests for SignalsPosition
+ * ERC721 Standard Tests for IcicleOptionsPosition
  *
  * Tests standard ERC721 behavior:
  * - Metadata (name, symbol, tokenURI)
@@ -30,12 +30,12 @@ async function deployCoreSigner(): Promise<{ address: string; signer: Signer }> 
  * - ERC165 interface support
  */
 
-describe("SignalsPosition ERC721", () => {
+describe("IcicleOptionsPosition ERC721", () => {
   async function deployPositionFixture() {
     const [owner, alice, bob, charlie] = await ethers.getSigners();
     const core = await deployCoreSigner();
 
-    const implFactory = await ethers.getContractFactory("SignalsPosition");
+    const implFactory = await ethers.getContractFactory("IcicleOptionsPosition");
     const impl = await implFactory.deploy();
     await impl.waitForDeployment();
 
@@ -48,9 +48,9 @@ describe("SignalsPosition ERC721", () => {
     ).deploy(await impl.getAddress(), initData);
 
     const position = (await ethers.getContractAt(
-      "SignalsPosition",
+      "IcicleOptionsPosition",
       await proxy.getAddress()
-    )) as SignalsPosition;
+    )) as IcicleOptionsPosition;
 
     return { owner, core: core.signer, alice, bob, charlie, position };
   }
@@ -71,8 +71,8 @@ describe("SignalsPosition ERC721", () => {
     it("returns correct name and symbol", async () => {
       const { position } = await loadFixture(deployPositionFixture);
 
-      expect(await position.name()).to.equal("Signals Position");
-      expect(await position.symbol()).to.equal("SIGP");
+      expect(await position.name()).to.equal("Icicle Options Position");
+      expect(await position.symbol()).to.equal("ICOP");
     });
 
     it("returns tokenURI (may be empty or base URI)", async () => {

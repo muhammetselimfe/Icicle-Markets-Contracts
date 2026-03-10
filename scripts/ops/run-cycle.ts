@@ -144,7 +144,7 @@ async function decodeRevert(err: unknown): Promise<{ name?: string; args?: unkno
   if (!data) return {};
 
   try {
-    const artifact = await hre.artifacts.readArtifact("SignalsErrors");
+    const artifact = await hre.artifacts.readArtifact("IcicleOptionsErrors");
     const iface = new hre.ethers.Interface(artifact.abi);
     const parsed = iface.parseError(data);
     return { name: parsed?.name, args: parsed?.args ? Array.from(parsed.args) : [] };
@@ -159,13 +159,13 @@ async function main() {
   console.log(`[run-cycle] environment=${env} network=${network.name}`);
 
   const envData = loadEnvironment(env);
-  const coreAddress = envData.contracts.SignalsCoreProxy;
+  const coreAddress = envData.contracts.IcicleOptionsCoreProxy;
   const paymentTokenAddress = envData.contracts.PaymentToken;
-  if (!coreAddress) throw new Error("Missing SignalsCoreProxy in environment file");
+  if (!coreAddress) throw new Error("Missing IcicleOptionsCoreProxy in environment file");
   if (!paymentTokenAddress) throw new Error("Missing payment token in environment file");
 
   const [deployer] = await ethers.getSigners();
-  const core = await ethers.getContractAt("SignalsCore", coreAddress, deployer);
+  const core = await ethers.getContractAt("IcicleOptionsCore", coreAddress, deployer);
 
   const payment = new ethers.Contract(
     paymentTokenAddress,

@@ -6,9 +6,9 @@ async function main() {
   const env = normalizeEnvironment(network.name);
   const envData = loadEnvironment(env);
 
-  const coreAddress = envData.contracts.SignalsCoreProxy;
+  const coreAddress = envData.contracts.IcicleOptionsCoreProxy;
   if (!coreAddress) {
-    throw new Error(`Missing SignalsCoreProxy in ${env} environment file`);
+    throw new Error(`Missing IcicleOptionsCoreProxy in ${env} environment file`);
   }
 
   const submitRaw = envData.config?.settlementSubmitWindow;
@@ -28,7 +28,7 @@ async function main() {
     );
   }
 
-  const core = await ethers.getContractAt("SignalsCore", coreAddress);
+  const core = await ethers.getContractAt("IcicleOptionsCore", coreAddress);
   const tx = await core.setSettlementTimeline(submitWindow, opsWindow, claimDelay);
   await tx.wait();
   console.log(

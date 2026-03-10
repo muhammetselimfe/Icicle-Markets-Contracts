@@ -37,11 +37,38 @@ export function loadEnvironment(env: Environment): EnvironmentFile {
   const raw = fs.readFileSync(envPath, "utf8");
   const parsed = JSON.parse(raw) as EnvironmentFile;
   if (!parsed.config) parsed.config = {};
-  if (parsed.contracts?.SignalsUSDToken && !parsed.contracts.PaymentToken) {
-    parsed.contracts.PaymentToken = parsed.contracts.SignalsUSDToken;
+  // Migrate legacy SignalsUSDToken → PaymentToken
+  if (parsed.contracts?.IcicleOptionsUSDToken && !parsed.contracts.PaymentToken) {
+    parsed.contracts.PaymentToken = parsed.contracts.IcicleOptionsUSDToken;
   }
-  if (parsed.contracts?.SignalsUSDToken) {
-    delete parsed.contracts.SignalsUSDToken;
+  if (parsed.contracts?.IcicleOptionsUSDToken) {
+    delete parsed.contracts.IcicleOptionsUSDToken;
+  }
+  // Migrate legacy Signals* → IcicleOptions* contract keys
+  const signalsKeyMap: Record<string, string> = {
+    SignalsCoreProxy: "IcicleOptionsCoreProxy",
+    SignalsPositionProxy: "IcicleOptionsPositionProxy",
+    SignalsLPShareProxy: "IcicleOptionsLPShareProxy",
+    SignalsCoreImplementation: "IcicleOptionsCoreImplementation",
+    SignalsPositionImplementation: "IcicleOptionsPositionImplementation",
+    SignalsLPShareImplementation: "IcicleOptionsLPShareImplementation",
+    SignalsCreate2Factory: "IcicleOptionsCreate2Factory",
+    SignalsDeployer: "IcicleOptionsDeployer",
+    SignalsLPShare: "IcicleOptionsLPShare",
+  };
+  for (const [oldKey, newKey] of Object.entries(signalsKeyMap)) {
+    if (parsed.contracts?.[oldKey]) {
+      if (!parsed.contracts[newKey]) {
+        parsed.contracts[newKey] = parsed.contracts[oldKey];
+      }
+      delete parsed.contracts[oldKey];
+    }
+  }
+  if (parsed.config?.lpShareTokenName === "Signals LP") {
+    parsed.config.lpShareTokenName = "Icicle Options LP";
+  }
+  if (parsed.config?.lpShareTokenSymbol === "SIGLP") {
+    parsed.config.lpShareTokenSymbol = "ICOLP";
   }
   return parsed;
 }
@@ -55,11 +82,32 @@ export function saveEnvironment(env: Environment, data: EnvironmentFile) {
 export function updateContracts(env: Environment, contracts: EnvironmentContracts) {
   const data = loadEnvironment(env);
   const nextContracts = { ...data.contracts, ...contracts };
-  if (nextContracts.SignalsUSDToken && !nextContracts.PaymentToken) {
-    nextContracts.PaymentToken = nextContracts.SignalsUSDToken;
+  // Migrate legacy SignalsUSDToken → PaymentToken
+  if (nextContracts.IcicleOptionsUSDToken && !nextContracts.PaymentToken) {
+    nextContracts.PaymentToken = nextContracts.IcicleOptionsUSDToken;
   }
-  if (nextContracts.SignalsUSDToken) {
-    delete nextContracts.SignalsUSDToken;
+  if (nextContracts.IcicleOptionsUSDToken) {
+    delete nextContracts.IcicleOptionsUSDToken;
+  }
+  // Migrate legacy Signals* → IcicleOptions* contract keys
+  const signalsKeyMap: Record<string, string> = {
+    SignalsCoreProxy: "IcicleOptionsCoreProxy",
+    SignalsPositionProxy: "IcicleOptionsPositionProxy",
+    SignalsLPShareProxy: "IcicleOptionsLPShareProxy",
+    SignalsCoreImplementation: "IcicleOptionsCoreImplementation",
+    SignalsPositionImplementation: "IcicleOptionsPositionImplementation",
+    SignalsLPShareImplementation: "IcicleOptionsLPShareImplementation",
+    SignalsCreate2Factory: "IcicleOptionsCreate2Factory",
+    SignalsDeployer: "IcicleOptionsDeployer",
+    SignalsLPShare: "IcicleOptionsLPShare",
+  };
+  for (const [oldKey, newKey] of Object.entries(signalsKeyMap)) {
+    if (nextContracts[oldKey]) {
+      if (!nextContracts[newKey]) {
+        nextContracts[newKey] = nextContracts[oldKey];
+      }
+      delete nextContracts[oldKey];
+    }
   }
   data.contracts = nextContracts;
   saveEnvironment(env, data);
@@ -101,7 +149,7 @@ export function normalizeEnvironment(env: string): Environment {
   const trimmed = env.trim();
   const raw = trimmed.includes(":") ? trimmed.split(":")[1] ?? "" : trimmed;
   const normalized = raw === "localhost" || raw === "hardhat" ? "local" : raw;
-  const allowed: Environment[] = ["local", "dev", "prod"];
+  const allowed: Environment[] = ["local", "dev", "prod", "fuji"];
   if (!allowed.includes(normalized as Environment)) {
     throw new Error(
       `Unknown environment '${normalized}'. Allowed: ${allowed.join(", ")}`

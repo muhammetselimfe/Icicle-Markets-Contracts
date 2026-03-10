@@ -45,7 +45,7 @@ function getPredictedPath(env: Environment): string {
 }
 
 function buildBase(chainId: number, env: Environment, release: string, component: Create2Component): string {
-  return `signals-v1|${chainId}|${env}|${release}|${component}`;
+  return `icicle-options-v1|${chainId}|${env}|${release}|${component}`;
 }
 
 function buildSalt(base: string, nonce: number): string {
@@ -82,7 +82,7 @@ export async function predictCreate2(input: Create2PredictionInput): Promise<Cre
   const release = input.release ?? MANUAL_CONFIG.release;
 
   const proxyBytecode = await loadProxyBytecode();
-  const deployerFactory = await hre.ethers.getContractFactory("SignalsDeployer");
+  const deployerFactory = await hre.ethers.getContractFactory("IcicleOptionsDeployer");
   const deployerInitHash = deployerInitCodeHash(deployerFactory.bytecode, input.deployerEOA);
 
   const deployerBase = buildBase(input.chainId, input.env, release, "DEPLOYER");
@@ -130,15 +130,15 @@ export async function predictCreate2(input: Create2PredictionInput): Promise<Cre
     deployerEOA: input.deployerEOA,
     create2Factory: input.create2Factory,
     contracts: {
-      SignalsCreate2Factory: input.create2Factory,
-      SignalsDeployer: deployerAddress,
-      SignalsCoreProxy: coreAddress,
-      SignalsPositionProxy: positionAddress,
-      SignalsLPShareProxy: lpShareAddress,
-      SignalsLPShare: lpShareAddress,
-      SignalsCoreImplementation: input.coreImpl,
-      SignalsPositionImplementation: input.positionImpl,
-      SignalsLPShareImplementation: input.lpShareImpl,
+      IcicleOptionsCreate2Factory: input.create2Factory,
+      IcicleOptionsDeployer: deployerAddress,
+      IcicleOptionsCoreProxy: coreAddress,
+      IcicleOptionsPositionProxy: positionAddress,
+      IcicleOptionsLPShareProxy: lpShareAddress,
+      IcicleOptionsLPShare: lpShareAddress,
+      IcicleOptionsCoreImplementation: input.coreImpl,
+      IcicleOptionsPositionImplementation: input.positionImpl,
+      IcicleOptionsLPShareImplementation: input.lpShareImpl,
     },
     create2: {
       vanityPrefix,
@@ -165,13 +165,13 @@ export async function predictCreate2Action(env: Environment) {
   const [deployer] = await ethers.getSigners();
 
   const envData = loadEnvironment(env);
-  const create2Factory = envData.contracts.SignalsCreate2Factory;
+  const create2Factory = envData.contracts.IcicleOptionsCreate2Factory;
   if (!create2Factory) {
-    throw new Error("Missing SignalsCreate2Factory in environment file");
+    throw new Error("Missing IcicleOptionsCreate2Factory in environment file");
   }
-  const coreImpl = envData.contracts.SignalsCoreImplementation;
-  const positionImpl = envData.contracts.SignalsPositionImplementation;
-  const lpShareImpl = envData.contracts.SignalsLPShareImplementation;
+  const coreImpl = envData.contracts.IcicleOptionsCoreImplementation;
+  const positionImpl = envData.contracts.IcicleOptionsPositionImplementation;
+  const lpShareImpl = envData.contracts.IcicleOptionsLPShareImplementation;
   if (!coreImpl || !positionImpl || !lpShareImpl) {
     throw new Error(
       "Missing core/position/lpshare implementation addresses in environment file"
@@ -193,5 +193,5 @@ export async function predictCreate2Action(env: Environment) {
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, JSON.stringify(prediction, null, 2));
   console.log(`[predict-create2] wrote ${outputPath}`);
-  console.log(`[predict-create2] coreProxy=${prediction.contracts.SignalsCoreProxy}`);
+  console.log(`[predict-create2] coreProxy=${prediction.contracts.IcicleOptionsCoreProxy}`);
 }

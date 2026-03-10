@@ -1,17 +1,17 @@
-# Signals v1 Contracts
+# Icicle Options v1 Contracts
 
-Solidity contracts for the Signals v1 protocol.
+Solidity contracts for the Icicle Options v1 protocol.
 
 ## Architecture
 
-- **SignalsCore (UUPS)**: upgradeable entry core that holds storage and delegates to modules
+- **IcicleOptionsCore (UUPS)**: upgradeable entry core that holds storage and delegates to modules
 - **Modules**: Trade, MarketLifecycle, Oracle (Redstone signed-pull), LPVault, Risk
-- **Tokens**: SignalsPosition (upgradeable ERC-721), SignalsLPShare (upgradeable ERC-20 + permit, ERC-4626-style informational views for an async request/claim vault)
+- **Tokens**: IcicleOptionsPosition (upgradeable ERC-721), IcicleOptionsLPShare (upgradeable ERC-20 + permit, ERC-4626-style informational views for an async request/claim vault)
 - **Libraries**: ClmsrMath, RiskMath, FeeWaterfallLib, VaultAccountingLib, LazyMulSegmentTree, FixedPointMathU
 
 ## Public Interfaces
 
-- `contracts/interfaces/ISignalsCore.sol` defines the external entrypoints for integrators
+- `contracts/interfaces/IIcicleOptionsCore.sol` defines the external entrypoints for integrators
 - Events and custom errors are declared in core contracts and modules
 
 ## Build and Test
@@ -32,3 +32,7 @@ yarn lint
 ## Governance and Upgrades
 
 Configuration changes and module wiring are controlled by the governance owner.
+
+## Attribution
+
+Based on [signals-protocol/v1-contract](https://github.com/signals-protocol/v1-contract) (MIT License). Original protocol design and implementation by the [Signals Protocol](https://docs.signals.wtf) team.

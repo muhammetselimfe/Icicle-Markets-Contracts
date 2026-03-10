@@ -2,22 +2,22 @@ import { ethers } from "hardhat";
 import { expect } from "chai";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import {
-  SignalsUSDToken,
+  IcicleOptionsUSDToken,
   MockFeePolicy,
   TradeModuleProxy,
   TradeModule,
-  SignalsPosition,
+  IcicleOptionsPosition,
   TestERC1967Proxy,
 } from "../../../typechain-types";
-import { ISignalsCore } from "../../../typechain-types/contracts/testonly/TradeModuleProxy";
+import { IIcicleOptionsCore } from "../../../typechain-types/contracts/testonly/TradeModuleProxy";
 import { WAD } from "../../helpers/constants";
 
 interface DeployedSystem {
   owner: HardhatEthersSigner;
   user: HardhatEthersSigner;
   otherUser: HardhatEthersSigner;
-  payment: SignalsUSDToken;
-  position: SignalsPosition;
+  payment: IcicleOptionsUSDToken;
+  position: IcicleOptionsPosition;
   core: TradeModuleProxy;
   tradeModule: TradeModule;
   feePolicy: MockFeePolicy;
@@ -28,7 +28,7 @@ describe("TradeModule batchClaimPayout", () => {
     const [owner, user, otherUser] = await ethers.getSigners();
 
     const payment = await (
-      await ethers.getContractFactory("SignalsUSDToken")
+      await ethers.getContractFactory("IcicleOptionsUSDToken")
     ).deploy();
     const feePolicy = await (
       await ethers.getContractFactory("MockFeePolicy")
@@ -50,7 +50,7 @@ describe("TradeModule batchClaimPayout", () => {
     ).deploy(tradeModuleContract.target);
 
     const positionImplFactory = await ethers.getContractFactory(
-      "SignalsPosition"
+      "IcicleOptionsPosition"
     );
     const positionImpl = await positionImplFactory.deploy();
     await positionImpl.waitForDeployment();
@@ -62,9 +62,9 @@ describe("TradeModule batchClaimPayout", () => {
       await ethers.getContractFactory("TestERC1967Proxy")
     ).deploy(positionImpl.target, positionInit)) as TestERC1967Proxy;
     const position = (await ethers.getContractAt(
-      "SignalsPosition",
+      "IcicleOptionsPosition",
       await positionProxy.getAddress()
-    )) as SignalsPosition;
+    )) as IcicleOptionsPosition;
 
     // claimDelaySeconds = 1 for easy testing
     await core.setAddresses(payment.target, await position.getAddress(), 1, 1);
@@ -100,7 +100,7 @@ describe("TradeModule batchClaimPayout", () => {
     numBins = 4
   ) {
     const now = (await ethers.provider.getBlock("latest"))!.timestamp;
-    const market: ISignalsCore.MarketStruct = {
+    const market: IIcicleOptionsCore.MarketStruct = {
       isSeeded: true,
       settled: false,
       snapshotChunksDone: false,
@@ -137,7 +137,7 @@ describe("TradeModule batchClaimPayout", () => {
     marketId: number,
     settlementTick: number,
     payoutReserve: bigint,
-    payment: SignalsUSDToken
+    payment: IcicleOptionsUSDToken
   ) {
     // Fund core contract to cover payout reserve
     const [owner] = await ethers.getSigners();
@@ -146,7 +146,7 @@ describe("TradeModule batchClaimPayout", () => {
     const past = BigInt(
       (await ethers.provider.getBlock("latest"))!.timestamp
     ) - 100n;
-    const settledMarket: ISignalsCore.MarketStruct = {
+    const settledMarket: IIcicleOptionsCore.MarketStruct = {
       isSeeded: m.isSeeded,
       settled: true,
       snapshotChunksDone: m.snapshotChunksDone,
@@ -180,7 +180,7 @@ describe("TradeModule batchClaimPayout", () => {
   async function openPos(
     core: TradeModuleProxy,
     user: HardhatEthersSigner,
-    position: SignalsPosition,
+    position: IcicleOptionsPosition,
     marketId: number,
     lo: number,
     hi: number,
@@ -345,7 +345,7 @@ describe("TradeModule batchClaimPayout", () => {
     const futureTime = BigInt(
       (await ethers.provider.getBlock("latest"))!.timestamp
     ) + 3600n;
-    const settledMarket: ISignalsCore.MarketStruct = {
+    const settledMarket: IIcicleOptionsCore.MarketStruct = {
       isSeeded: m.isSeeded,
       settled: true,
       snapshotChunksDone: m.snapshotChunksDone,

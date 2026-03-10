@@ -12,10 +12,10 @@ export async function deployImplsAction(env: Environment) {
   const envData = loadEnvironment(env);
 
   let create2FactoryAddress =
-    envData.contracts.SignalsCreate2Factory ?? envData.contracts.Create2Factory;
+    envData.contracts.IcicleOptionsCreate2Factory ?? envData.contracts.Create2Factory;
   if (!create2FactoryAddress) {
     const factory = await (
-      await ethers.getContractFactory("SignalsCreate2Factory")
+      await ethers.getContractFactory("IcicleOptionsCreate2Factory")
     ).deploy(deployer.address);
     await factory.waitForDeployment();
     create2FactoryAddress = factory.target.toString();
@@ -23,25 +23,25 @@ export async function deployImplsAction(env: Environment) {
 
   const factoryCode = await ethers.provider.getCode(create2FactoryAddress);
   if (factoryCode === "0x") {
-    throw new Error(`SignalsCreate2Factory has no code at ${create2FactoryAddress}`);
+    throw new Error(`IcicleOptionsCreate2Factory has no code at ${create2FactoryAddress}`);
   }
 
-  const coreImpl = await (await ethers.getContractFactory("SignalsCore")).deploy();
+  const coreImpl = await (await ethers.getContractFactory("IcicleOptionsCore")).deploy();
   await coreImpl.waitForDeployment();
 
   const positionImpl = await (
-    await ethers.getContractFactory("SignalsPosition")
+    await ethers.getContractFactory("IcicleOptionsPosition")
   ).deploy();
   await positionImpl.waitForDeployment();
 
-  const lpShareImpl = await (await ethers.getContractFactory("SignalsLPShare")).deploy();
+  const lpShareImpl = await (await ethers.getContractFactory("IcicleOptionsLPShare")).deploy();
   await lpShareImpl.waitForDeployment();
 
   updateContracts(env, {
-    SignalsCreate2Factory: create2FactoryAddress,
-    SignalsCoreImplementation: coreImpl.target.toString(),
-    SignalsPositionImplementation: positionImpl.target.toString(),
-    SignalsLPShareImplementation: lpShareImpl.target.toString(),
+    IcicleOptionsCreate2Factory: create2FactoryAddress,
+    IcicleOptionsCoreImplementation: coreImpl.target.toString(),
+    IcicleOptionsPositionImplementation: positionImpl.target.toString(),
+    IcicleOptionsLPShareImplementation: lpShareImpl.target.toString(),
   });
 
   const { data: envSnapshot, record } = recordDeployment(env, {

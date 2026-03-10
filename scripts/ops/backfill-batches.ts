@@ -103,7 +103,7 @@ const decodeRevert = async (err: unknown) => {
   const data = extractErrorData(err);
   if (!data) return;
   try {
-    const artifact = await hre.artifacts.readArtifact("SignalsErrors");
+    const artifact = await hre.artifacts.readArtifact("IcicleOptionsErrors");
     const iface = new Interface(artifact.abi);
     const parsed = iface.parseError(data);
     if (parsed?.name) {
@@ -149,9 +149,9 @@ async function main() {
   const env = resolvedEnv;
   const envData = loadEnvironment(env);
   const coreAddress =
-    process.env.CORE_ADDRESS ?? envData.contracts.SignalsCoreProxy;
+    process.env.CORE_ADDRESS ?? envData.contracts.IcicleOptionsCoreProxy;
   if (!coreAddress) {
-    throw new Error("Missing SignalsCoreProxy address");
+    throw new Error("Missing IcicleOptionsCoreProxy address");
   }
 
   const feePolicy =
@@ -177,7 +177,7 @@ async function main() {
     ]);
   }
 
-  const core = await ethers.getContractAt("SignalsCore", coreAddress, signer);
+  const core = await ethers.getContractAt("IcicleOptionsCore", coreAddress, signer);
   const signerAddress = await signer.getAddress();
 
   const [

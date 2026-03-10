@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../core/SignalsCoreStorage.sol";
-import "../interfaces/ISignalsCore.sol";
+import "../core/IcicleOptionsCoreStorage.sol";
+import "../interfaces/IIcicleOptionsCore.sol";
 import "../interfaces/IFeePolicy.sol";
-import "../interfaces/ISignalsPosition.sol";
-import {SignalsErrors as SE} from "../errors/SignalsErrors.sol";
+import "../interfaces/IIcicleOptionsPosition.sol";
+import {IcicleOptionsErrors as SE} from "../errors/IcicleOptionsErrors.sol";
 import "../lib/ClmsrMath.sol";
 import "../lib/LazyMulSegmentTree.sol";
 import "../lib/FixedPointMathU.sol";
@@ -14,7 +14,7 @@ import "../lib/TickBinLib.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @notice Delegate-only trade module
-contract TradeModule is SignalsCoreStorage {
+contract TradeModule is IcicleOptionsCoreStorage {
     address private immutable self;
     
     uint256 internal constant WAD = 1e18;
@@ -93,7 +93,7 @@ contract TradeModule is SignalsCoreStorage {
         uint256 maxCost
     ) external onlyDelegated returns (uint256 positionId) {
         require(quantity != 0, SE.InvalidQuantity(quantity));
-        ISignalsCore.Market storage market = _loadAndValidateMarket(marketId);
+        IIcicleOptionsCore.Market storage market = _loadAndValidateMarket(marketId);
         address feePolicy = market.feePolicy;
         (uint32 loBin, uint32 hiBin) = TickBinLib.ticksToBins(
             market.minTick, market.maxTick, market.tickSpacing, market.numBins,
@@ -139,10 +139,10 @@ contract TradeModule is SignalsCoreStorage {
         uint256 maxCost
     ) external onlyDelegated {
         require(quantity != 0, SE.InvalidQuantity(quantity));
-        ISignalsPosition.Position memory position = positionContract.getPosition(positionId);
+        IIcicleOptionsPosition.Position memory position = positionContract.getPosition(positionId);
         require(positionContract.ownerOf(positionId) == msg.sender, SE.UnauthorizedCaller(msg.sender));
 
-        ISignalsCore.Market storage market = _loadAndValidateMarket(position.marketId);
+        IIcicleOptionsCore.Market storage market = _loadAndValidateMarket(position.marketId);
         address feePolicy = market.feePolicy;
         (uint32 loBin, uint32 hiBin) = TickBinLib.ticksToBins(
             market.minTick, market.maxTick, market.tickSpacing, market.numBins,
@@ -183,7 +183,7 @@ contract TradeModule is SignalsCoreStorage {
         uint128 quantity,
         uint256 minProceeds
     ) external onlyDelegated {
-        ISignalsPosition.Position memory position = positionContract.getPosition(positionId);
+        IIcicleOptionsPosition.Position memory position = positionContract.getPosition(positionId);
         (uint128 newQuantity, uint256 baseProceeds, uint256 fee6, address feePolicy) = _decreasePositionInternal(
             position,
             positionId,
@@ -198,7 +198,7 @@ contract TradeModule is SignalsCoreStorage {
         uint256 positionId,
         uint256 minProceeds
     ) external onlyDelegated {
-        ISignalsPosition.Position memory position = positionContract.getPosition(positionId);
+        IIcicleOptionsPosition.Position memory position = positionContract.getPosition(positionId);
         (uint128 newQty, uint256 baseProceeds, uint256 fee6, address feePolicy) = _decreasePositionInternal(
             position,
             positionId,
@@ -248,10 +248,10 @@ contract TradeModule is SignalsCoreStorage {
      * @return payout Amount owed to caller (6-dec)
      */
     function _processClaimPayout(uint256 positionId) internal returns (uint256 payout) {
-        ISignalsPosition.Position memory position = positionContract.getPosition(positionId);
+        IIcicleOptionsPosition.Position memory position = positionContract.getPosition(positionId);
         require(positionContract.ownerOf(positionId) == msg.sender, SE.UnauthorizedCaller(msg.sender));
 
-        ISignalsCore.Market storage market = markets[position.marketId];
+        IIcicleOptionsCore.Market storage market = markets[position.marketId];
         require(market.settled, SE.MarketNotSettled(position.marketId));
 
         // Time-based gating: claim allowed after Tset + Δ_claim
@@ -298,7 +298,7 @@ contract TradeModule is SignalsCoreStorage {
         uint128 quantity
     ) external view returns (uint256 cost) {
         require(quantity != 0, SE.InvalidQuantity(quantity));
-        ISignalsPosition.Position memory position = positionContract.getPosition(positionId);
+        IIcicleOptionsPosition.Position memory position = positionContract.getPosition(positionId);
         _loadAndValidateMarket(position.marketId);
         uint256 costWad = _calculateTradeCost(position.marketId, position.lowerTick, position.upperTick, uint256(quantity).toWad());
         return _roundDebit(costWad);
@@ -309,7 +309,7 @@ contract TradeModule is SignalsCoreStorage {
         uint128 quantity
     ) external view returns (uint256 proceeds) {
         require(quantity != 0, SE.InvalidQuantity(quantity));
-        ISignalsPosition.Position memory position = positionContract.getPosition(positionId);
+        IIcicleOptionsPosition.Position memory position = positionContract.getPosition(positionId);
         _loadAndValidateMarket(position.marketId);
         uint256 proceedsWad = _calculateSellProceeds(position.marketId, position.lowerTick, position.upperTick, uint256(quantity).toWad());
         return _roundCredit(proceedsWad);
@@ -318,7 +318,7 @@ contract TradeModule is SignalsCoreStorage {
     function calculateCloseProceeds(
         uint256 positionId
     ) external view returns (uint256 proceeds) {
-        ISignalsPosition.Position memory position = positionContract.getPosition(positionId);
+        IIcicleOptionsPosition.Position memory position = positionContract.getPosition(positionId);
         _loadAndValidateMarket(position.marketId);
         uint256 proceedsWad = _calculateSellProceeds(position.marketId, position.lowerTick, position.upperTick, uint256(position.quantity).toWad());
         return _roundCredit(proceedsWad);
@@ -327,7 +327,7 @@ contract TradeModule is SignalsCoreStorage {
     function calculatePositionValue(
         uint256 positionId
     ) external view returns (uint256 value) {
-        ISignalsPosition.Position memory position = positionContract.getPosition(positionId);
+        IIcicleOptionsPosition.Position memory position = positionContract.getPosition(positionId);
         uint256 proceedsWad = _calculateSellProceeds(position.marketId, position.lowerTick, position.upperTick, uint256(position.quantity).toWad());
         return _roundCredit(proceedsWad);
     }
@@ -342,7 +342,7 @@ contract TradeModule is SignalsCoreStorage {
     function _loadAndValidateMarket(uint256 marketId)
         internal
         view
-        returns (ISignalsCore.Market storage market)
+        returns (IIcicleOptionsCore.Market storage market)
     {
         market = markets[marketId];
         require(_marketExists(marketId), SE.MarketNotFound(marketId));
@@ -359,7 +359,7 @@ contract TradeModule is SignalsCoreStorage {
         int256 upperTick,
         uint256 quantityWad
     ) internal view returns (uint256 costWad) {
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         (uint32 loBin, uint32 hiBin) = TickBinLib.ticksToBins(
             market.minTick, market.maxTick, market.tickSpacing, market.numBins,
             lowerTick, upperTick
@@ -374,7 +374,7 @@ contract TradeModule is SignalsCoreStorage {
         int256 upperTick,
         uint256 quantityWad
     ) internal view returns (uint256 proceedsWad) {
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         (uint32 loBin, uint32 hiBin) = TickBinLib.ticksToBins(
             market.minTick, market.maxTick, market.tickSpacing, market.numBins,
             lowerTick, upperTick
@@ -385,7 +385,7 @@ contract TradeModule is SignalsCoreStorage {
 
     /// @notice Internal decrease position logic (execute-first model for exact proceeds calculation)
     function _decreasePositionInternal(
-        ISignalsPosition.Position memory position,
+        IIcicleOptionsPosition.Position memory position,
         uint256 positionId,
         uint128 quantity,
         uint256 minProceeds
@@ -393,7 +393,7 @@ contract TradeModule is SignalsCoreStorage {
         require(quantity != 0, SE.InvalidQuantity(quantity));
         require(positionContract.ownerOf(positionId) == msg.sender, SE.UnauthorizedCaller(msg.sender));
 
-        ISignalsCore.Market storage market = _loadAndValidateMarket(position.marketId);
+        IIcicleOptionsCore.Market storage market = _loadAndValidateMarket(position.marketId);
         require(quantity <= position.quantity, SE.InsufficientPositionQuantity(quantity, position.quantity));
         feePolicy = market.feePolicy;
         (uint32 loBin, uint32 hiBin) = TickBinLib.ticksToBins(
@@ -526,7 +526,7 @@ contract TradeModule is SignalsCoreStorage {
         uint256 qtyWad,
         bool isBuy
     ) internal returns (uint256 sumBefore, uint256 sumAfter) {
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         (uint32 loBin, uint32 hiBin) = TickBinLib.ticksToBins(
             market.minTick, market.maxTick, market.tickSpacing, market.numBins,
             lowerTick, upperTick
@@ -543,7 +543,7 @@ contract TradeModule is SignalsCoreStorage {
         uint256 qtyWad,
         bool isBuy
     ) internal returns (uint256 sumBefore, uint256 sumAfter) {
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         LazyMulSegmentTree.Tree storage tree = marketTrees[marketId];
         
         uint256 alpha = market.liquidityParameter;
@@ -579,7 +579,7 @@ contract TradeModule is SignalsCoreStorage {
 
 
     function _calculateClaimAmount(
-        ISignalsPosition.Position memory position,
+        IIcicleOptionsPosition.Position memory position,
         int256 settlementTick
     ) internal pure returns (uint256) {
         bool winning = position.lowerTick <= settlementTick && position.upperTick > settlementTick;
@@ -596,7 +596,7 @@ contract TradeModule is SignalsCoreStorage {
         int256 upperTick,
         uint128 quantity
     ) internal {
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         (uint32 loBin, uint32 hiBin) = TickBinLib.ticksToBins(
             market.minTick, market.maxTick, market.tickSpacing, market.numBins,
             lowerTick, upperTick
@@ -632,7 +632,7 @@ contract TradeModule is SignalsCoreStorage {
         int256 upperTick,
         uint128 quantity
     ) internal {
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         (uint32 loBin, uint32 hiBin) = TickBinLib.ticksToBins(
             market.minTick, market.maxTick, market.tickSpacing, market.numBins,
             lowerTick, upperTick
@@ -673,7 +673,7 @@ contract TradeModule is SignalsCoreStorage {
         uint256 marketId,
         int256 tick
     ) internal view returns (uint256 exposure) {
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         uint32 bin = TickBinLib.tickToBin(market.minTick, market.tickSpacing, market.numBins, tick);
         return ExposureDiffLib.pointQuery(_exposureDiff[marketId], bin);
     }

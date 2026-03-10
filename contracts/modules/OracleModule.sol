@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../core/SignalsCoreStorage.sol";
-import {SignalsErrors as SE} from "../errors/SignalsErrors.sol";
+import "../core/IcicleOptionsCoreStorage.sol";
+import {IcicleOptionsErrors as SE} from "../errors/IcicleOptionsErrors.sol";
 import "@redstone-finance/evm-connector/contracts/data-services/PrimaryProdDataServiceConsumerBase.sol";
 
 /// @title OracleModule
@@ -12,7 +12,7 @@ import "@redstone-finance/evm-connector/contracts/data-services/PrimaryProdDataS
 ///      - Closest-sample selection: |priceTimestamp - Tset| minimum, tie-break to past
 ///      - Δmax validation: reject samples too far from Tset
 ///      - δfuture validation: reject future-dated samples
-contract OracleModule is SignalsCoreStorage, PrimaryProdDataServiceConsumerBase {
+contract OracleModule is IcicleOptionsCoreStorage, PrimaryProdDataServiceConsumerBase {
     address private immutable self;
 
     modifier onlyDelegated() {
@@ -84,7 +84,7 @@ contract OracleModule is SignalsCoreStorage, PrimaryProdDataServiceConsumerBase 
     function submitSettlementSample(
         uint256 marketId
     ) external onlyDelegated {
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         require(market.numBins != 0, SE.MarketNotFound(marketId));
         require(!market.settled, SE.MarketAlreadySettled(marketId));
         require(!market.failed, SE.MarketAlreadyFailed(marketId));
@@ -189,7 +189,7 @@ contract OracleModule is SignalsCoreStorage, PrimaryProdDataServiceConsumerBase 
     /// @notice Get the current market state (derived from timestamps)
     /// @return state 0=Trading, 1=SettlementOpen, 2=PendingOps, 3=FinalizedPrimary, 4=FinalizedSecondary, 5=FailedPendingManual
     function getMarketState(uint256 marketId) external view returns (uint8 state) {
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         require(market.numBins != 0, SE.MarketNotFound(marketId));
         
         if (market.settled) {
@@ -215,7 +215,7 @@ contract OracleModule is SignalsCoreStorage, PrimaryProdDataServiceConsumerBase 
         uint64 opsEnd,
         uint64 claimOpen
     ) {
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         require(market.numBins != 0, SE.MarketNotFound(marketId));
         
         tSet = market.settlementTimestamp;
@@ -248,7 +248,7 @@ contract OracleModule is SignalsCoreStorage, PrimaryProdDataServiceConsumerBase 
     /// @dev Convert settlement value to tick
     /// settlementTick = settlementValue / 1e6
     /// maxTick is exclusive upper bound, clamp to last valid tick
-    function _toSettlementTick(ISignalsCore.Market storage market, int256 settlementValue) internal view returns (int256) {
+    function _toSettlementTick(IIcicleOptionsCore.Market storage market, int256 settlementValue) internal view returns (int256) {
         int256 spacing = market.tickSpacing;
         int256 tick = settlementValue / 1_000_000; // Convert 6-decimal value to tick
         

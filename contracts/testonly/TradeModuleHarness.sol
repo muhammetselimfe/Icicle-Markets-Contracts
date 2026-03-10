@@ -7,7 +7,7 @@ import "../lib/TickBinLib.sol";
 /// @notice Harness to expose TradeModule validation helpers for testing.
 contract TradeModuleHarness is TradeModule {
     /// @notice Set a market struct directly for testing.
-    function setMarket(uint256 marketId, ISignalsCore.Market calldata market) external {
+    function setMarket(uint256 marketId, IIcicleOptionsCore.Market calldata market) external {
         markets[marketId] = market;
     }
 
@@ -20,9 +20,9 @@ contract TradeModuleHarness is TradeModule {
     function exposedLoadAndValidateMarket(uint256 marketId)
         external
         view
-        returns (ISignalsCore.Market memory)
+        returns (IIcicleOptionsCore.Market memory)
     {
-        ISignalsCore.Market storage market = _loadAndValidateMarket(marketId);
+        IIcicleOptionsCore.Market storage market = _loadAndValidateMarket(marketId);
         return market;
     }
 
@@ -32,7 +32,7 @@ contract TradeModuleHarness is TradeModule {
         int256 upperTick,
         uint256 marketId
     ) external view {
-        ISignalsCore.Market storage market = markets[marketId];
+        IIcicleOptionsCore.Market storage market = markets[marketId];
         // TickBinLib.ticksToBins validates tick range internally
         TickBinLib.ticksToBins(
             market.minTick, market.maxTick, market.tickSpacing, market.numBins,

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-interface ISignalsCore {
+interface IIcicleOptionsCore {
     event OperatorUpdated(address indexed operator, bool allowed);
     struct Market {
         // status flags (packable)

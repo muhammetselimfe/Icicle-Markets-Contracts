@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 /// @title IRiskModule
 /// @notice Interface for RiskModule gate functions
-/// @dev Used by SignalsCore for abi.encodeCall in delegatecall
+/// @dev Used by IcicleOptionsCore for abi.encodeCall in delegatecall
 interface IRiskModule {
     /// @notice Gate for market creation - validates α limit and prior admissibility
     /// @param liquidityParameter Market α to validate (WAD)
