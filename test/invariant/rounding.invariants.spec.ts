@@ -95,6 +95,18 @@ describe("Rounding Invariants", () => {
       accumulatedFees: 0n,
       minFactor: WAD, // uniform prior
       deltaEt: 0n, // Uniform prior: ΔEₜ = 0
+      dynamicEnabled: false,
+      anchorCenterBin: 0,
+      cachedOracleTs: 0,
+      cachedOracleTick: 0,
+      perBinCap: 0,
+      accumulatedPremiums: 0n,
+      accumulatedProceeds: 0n,
+      dynW: 0n,
+      dynVolBinsWad: 0n,
+      dynSigmaMinWad: 0n,
+      dynSigmaMaxWad: 0n,
+      dynFloorWad: 0n,
     };
     await core.setMarket(MARKET_ID, market);
     await core.seedTree(MARKET_ID, Array(NUM_BINS).fill(WAD));

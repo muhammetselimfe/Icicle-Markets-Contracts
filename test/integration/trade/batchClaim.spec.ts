@@ -125,6 +125,18 @@ describe("TradeModule batchClaimPayout", () => {
       accumulatedFees: 0n,
       minFactor: WAD,
       deltaEt: 0n,
+      dynamicEnabled: false,
+      anchorCenterBin: 0,
+      cachedOracleTs: 0,
+      cachedOracleTick: 0,
+      perBinCap: 0,
+      accumulatedPremiums: 0n,
+      accumulatedProceeds: 0n,
+      dynW: 0n,
+      dynVolBinsWad: 0n,
+      dynSigmaMinWad: 0n,
+      dynSigmaMaxWad: 0n,
+      dynFloorWad: 0n,
     };
     await core.setMarket(marketId, market);
     const factors = Array(numBins).fill(WAD);
@@ -171,6 +183,18 @@ describe("TradeModule batchClaimPayout", () => {
       accumulatedFees: m.accumulatedFees,
       minFactor: m.minFactor,
       deltaEt: m.deltaEt,
+      dynamicEnabled: false,
+      anchorCenterBin: 0,
+      cachedOracleTs: 0,
+      cachedOracleTick: 0,
+      perBinCap: 0,
+      accumulatedPremiums: 0n,
+      accumulatedProceeds: 0n,
+      dynW: 0n,
+      dynVolBinsWad: 0n,
+      dynSigmaMinWad: 0n,
+      dynSigmaMaxWad: 0n,
+      dynFloorWad: 0n,
     };
     await core.setMarket(marketId, settledMarket);
     await core.setPayoutReserve(marketId, payoutReserve);
@@ -370,6 +394,18 @@ describe("TradeModule batchClaimPayout", () => {
       accumulatedFees: m.accumulatedFees,
       minFactor: m.minFactor,
       deltaEt: m.deltaEt,
+      dynamicEnabled: false,
+      anchorCenterBin: 0,
+      cachedOracleTs: 0,
+      cachedOracleTick: 0,
+      perBinCap: 0,
+      accumulatedPremiums: 0n,
+      accumulatedProceeds: 0n,
+      dynW: 0n,
+      dynVolBinsWad: 0n,
+      dynSigmaMinWad: 0n,
+      dynSigmaMaxWad: 0n,
+      dynFloorWad: 0n,
     };
     await core.setMarket(1, settledMarket);
 

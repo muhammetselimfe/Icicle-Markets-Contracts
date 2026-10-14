@@ -70,8 +70,28 @@ library ExposureDiffLib {
         
         // Exposure must be non-negative (invariant check)
         if (sum < 0) revert SE.ExposureDiffNegativeExposure(int256(uint256(bin)), sum);
-        
+
         return uint256(sum);
+    }
+
+    /**
+     * @notice Maximum exposure across bins [loBin, hiBin] (inclusive).
+     * @dev Single prefix-sum pass from 0..hiBin, tracking the max within the range.
+     *      Used by the per-bin exposure cap. O(hiBin).
+     */
+    function maxInRange(
+        mapping(uint32 => int256) storage diff,
+        uint32 loBin,
+        uint32 hiBin
+    ) internal view returns (uint256 maxExposure) {
+        int256 sum = 0;
+        for (uint32 i = 0; i <= hiBin; i++) {
+            sum += diff[i];
+            if (i >= loBin) {
+                if (sum < 0) revert SE.ExposureDiffNegativeExposure(int256(uint256(i)), sum);
+                if (uint256(sum) > maxExposure) maxExposure = uint256(sum);
+            }
+        }
     }
 }
 

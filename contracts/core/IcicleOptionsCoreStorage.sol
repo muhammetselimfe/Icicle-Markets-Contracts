@@ -15,20 +15,25 @@ abstract contract IcicleOptionsCoreStorage {
     event TreasuryFunded(address indexed from, uint256 amount6, uint256 treasuryNav);
     event TreasuryWithdrawn(address indexed to, uint256 amount6, uint256 treasuryNav);
 
-    /// @dev Batch/day granularity for daily accounting. Used to derive batchId as day-key.
-    uint64 internal constant BATCH_SECONDS = 86_400;
-    /// @dev PST (UTC-8) day boundary offset in seconds.
+    /// @dev day boundary offset in seconds (multiple of common batch periods).
     uint64 internal constant BATCH_TIMEZONE_OFFSET = 28_800;
+    // NOTE: configurable `batchSeconds` storage var is declared near __gap (append-only
+    // for upgrade safety); 0 => 86400 (daily default).
 
-    function _toBatchId(uint64 timestamp) internal pure returns (uint64) {
+    /// @dev Effective batch period; treats unset (0) as the 86400 daily default.
+    function _period() internal view returns (uint64) {
+        return batchSeconds == 0 ? 86_400 : batchSeconds;
+    }
+
+    function _toBatchId(uint64 timestamp) internal view returns (uint64) {
         if (timestamp < BATCH_TIMEZONE_OFFSET) {
             return 0;
         }
-        return (timestamp - BATCH_TIMEZONE_OFFSET) / BATCH_SECONDS;
+        return (timestamp - BATCH_TIMEZONE_OFFSET) / _period();
     }
 
-    function _batchStartTimestamp(uint64 batchId) internal pure returns (uint64) {
-        return batchId * BATCH_SECONDS + BATCH_TIMEZONE_OFFSET;
+    function _batchStartTimestamp(uint64 batchId) internal view returns (uint64) {
+        return batchId * _period() + BATCH_TIMEZONE_OFFSET;
     }
 
     // ============================================================
@@ -312,6 +317,10 @@ abstract contract IcicleOptionsCoreStorage {
     /// @notice Market ID → batch resolution flag (prevents double-counting)
     mapping(uint256 => bool) internal _marketBatchResolved;
 
+    /// @dev Configurable batch accounting period (seconds); 0 => 86400 daily default.
+    ///      Appended here (not at the top) so the layout stays append-only / upgrade-safe.
+    uint64 public batchSeconds;
+
     // Reserve ample slots for future upgrades; do not change after first deployment.
-    uint256[12] internal __gap;
+    uint256[11] internal __gap;
 }

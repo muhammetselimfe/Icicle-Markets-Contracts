@@ -8,6 +8,7 @@ import "../interfaces/IIcicleOptionsPosition.sol";
 import {IcicleOptionsErrors as SE} from "../errors/IcicleOptionsErrors.sol";
 import "../lib/ClmsrMath.sol";
 import "../lib/LazyMulSegmentTree.sol";
+import "../lib/PricingLayer.sol";
 import "../lib/FixedPointMathU.sol";
 import "../lib/ExposureDiffLib.sol";
 import "../lib/TickBinLib.sol";
@@ -100,17 +101,13 @@ contract TradeModule is IcicleOptionsCoreStorage {
             lowerTick, upperTick
         );
 
+        // Bound worst-case payout per bin (no-op if cap disabled) before any state change
+        _requireExposureWithinCap(marketId, market, loBin, hiBin, quantity);
+
         uint256 qtyWad = uint256(quantity).toWad();
-        
-        // Execute-first: apply factor and get actual sum change
-        (uint256 sumBefore, uint256 sumAfter) = _applyFactorChunkedByBins(
-            marketId, loBin, hiBin, lowerTick, upperTick, qtyWad, true
-        );
-        
-        // Compute exact cost from actual sum change (no view/execute mismatch)
-        uint256 costWad = ClmsrMath.computeBuyCostFromSumChange(
-            market.liquidityParameter, sumBefore, sumAfter
-        );
+
+        // Execute-first: apply factor; cost from effective Zeff (dynamic) or raw tree (static)
+        uint256 costWad = _executeBuy(marketId, market, loBin, hiBin, lowerTick, upperTick, qtyWad);
         uint256 cost6 = _roundDebit(costWad);
 
         uint256 fee6 = _quoteFeeWithPolicy(feePolicy, true, msg.sender, marketId, lowerTick, upperTick, quantity, cost6);
@@ -120,6 +117,7 @@ contract TradeModule is IcicleOptionsCoreStorage {
         // Payment after state change (atomic transaction ensures rollback on failure)
         _pullPayment(msg.sender, totalCost);
 
+        if (market.dynamicEnabled) market.accumulatedPremiums += cost6.toWad();
         market.accumulatedFees += fee6.toWad();
         _addExposureByBins(marketId, loBin, hiBin, quantity, market.numBins);
 
@@ -149,17 +147,11 @@ contract TradeModule is IcicleOptionsCoreStorage {
             position.lowerTick, position.upperTick
         );
 
+        _requireExposureWithinCap(position.marketId, market, loBin, hiBin, quantity);
+
         uint256 qtyWad = uint256(quantity).toWad();
-        
-        // Execute-first: apply factor and get actual sum change
-        (uint256 sumBefore, uint256 sumAfter) = _applyFactorChunkedByBins(
-            position.marketId, loBin, hiBin, position.lowerTick, position.upperTick, qtyWad, true
-        );
-        
-        // Compute exact cost from actual sum change
-        uint256 costWad = ClmsrMath.computeBuyCostFromSumChange(
-            market.liquidityParameter, sumBefore, sumAfter
-        );
+
+        uint256 costWad = _executeBuy(position.marketId, market, loBin, hiBin, position.lowerTick, position.upperTick, qtyWad);
         uint256 cost6 = _roundDebit(costWad);
 
         uint256 fee6 = _quoteFeeWithPolicy(feePolicy, true, msg.sender, position.marketId, position.lowerTick, position.upperTick, quantity, cost6);
@@ -168,6 +160,7 @@ contract TradeModule is IcicleOptionsCoreStorage {
 
         _pullPayment(msg.sender, totalCost);
 
+        if (market.dynamicEnabled) market.accumulatedPremiums += cost6.toWad();
         market.accumulatedFees += fee6.toWad();
         _addExposureByBins(position.marketId, loBin, hiBin, quantity, market.numBins);
 
@@ -353,6 +346,10 @@ contract TradeModule is IcicleOptionsCoreStorage {
     }
 
     /// @dev Thin wrapper to calculate buy cost using shared library.
+    /// @dev Read-only quote: intentionally does NOT enforce oracle freshness. These views
+    ///      back position valuation / display and must degrade gracefully (return a number)
+    ///      when the keeper is behind or the market is settled. Freshness is enforced on the
+    ///      EXECUTION path (_executeBuy/_executeSell), which is where funds actually move.
     function _calculateTradeCost(
         uint256 marketId,
         int256 lowerTick,
@@ -365,7 +362,15 @@ contract TradeModule is IcicleOptionsCoreStorage {
             lowerTick, upperTick
         );
         LazyMulSegmentTree.Tree storage tree = marketTrees[marketId];
-        costWad = tree.calculateTradeCost(market.liquidityParameter, loBin, hiBin, quantityWad);
+        if (market.dynamicEnabled) {
+            (uint256 center, uint256 sigma) = _dynBell(market);
+            costWad = PricingLayer.quoteBuyView(
+                tree, market.numBins, loBin, hiBin, quantityWad,
+                market.liquidityParameter, center, sigma, market.dynFloorWad
+            );
+        } else {
+            costWad = tree.calculateTradeCost(market.liquidityParameter, loBin, hiBin, quantityWad);
+        }
     }
 
     function _calculateSellProceeds(
@@ -380,7 +385,15 @@ contract TradeModule is IcicleOptionsCoreStorage {
             lowerTick, upperTick
         );
         LazyMulSegmentTree.Tree storage tree = marketTrees[marketId];
-        proceedsWad = tree.calculateSellProceeds(market.liquidityParameter, loBin, hiBin, quantityWad);
+        if (market.dynamicEnabled) {
+            (uint256 center, uint256 sigma) = _dynBell(market);
+            proceedsWad = PricingLayer.quoteSellView(
+                tree, market.numBins, loBin, hiBin, quantityWad,
+                market.liquidityParameter, center, sigma, market.dynFloorWad
+            );
+        } else {
+            proceedsWad = tree.calculateSellProceeds(market.liquidityParameter, loBin, hiBin, quantityWad);
+        }
     }
 
     /// @notice Internal decrease position logic (execute-first model for exact proceeds calculation)
@@ -402,16 +415,8 @@ contract TradeModule is IcicleOptionsCoreStorage {
         );
 
         uint256 qtyWad = uint256(quantity).toWad();
-        
-        // Execute-first: apply factor and get actual sum change
-        (uint256 sumBefore, uint256 sumAfter) = _applyFactorChunkedByBins(
-            position.marketId, loBin, hiBin, position.lowerTick, position.upperTick, qtyWad, false
-        );
-        
-        // Compute exact proceeds from actual sum change
-        uint256 proceedsWad = ClmsrMath.computeSellProceedsFromSumChange(
-            market.liquidityParameter, sumBefore, sumAfter
-        );
+
+        uint256 proceedsWad = _executeSell(position.marketId, market, loBin, hiBin, position.lowerTick, position.upperTick, qtyWad);
         baseProceeds = _roundCredit(proceedsWad);
 
         fee6 = _quoteFeeWithPolicy(
@@ -427,7 +432,12 @@ contract TradeModule is IcicleOptionsCoreStorage {
         uint256 netProceeds = baseProceeds - fee6;
         require(netProceeds >= minProceeds, SE.ProceedsBelowMinimum(netProceeds, minProceeds));
 
+        // Record NET proceeds (what the pool actually paid out) so realized maker cash
+        // deltaC = accumulatedPremiums - accumulatedProceeds is exact, and the withheld
+        // sell fee flows through the 70/20/10 waterfall (Ftot) instead of being absorbed
+        // into loss-compensation (which would route it 100% to the LP).
         market.accumulatedFees += fee6.toWad();
+        if (market.dynamicEnabled) market.accumulatedProceeds += netProceeds.toWad();
         _removeExposureByBins(position.marketId, loBin, hiBin, quantity, market.numBins);
 
         _pushPayment(msg.sender, netProceeds);
@@ -440,6 +450,118 @@ contract TradeModule is IcicleOptionsCoreStorage {
             }
         } else {
             positionContract.updateQuantity(positionId, newQuantity);
+        }
+    }
+
+    /// @dev Enforce the per-bin exposure cap on a buy over [loBin,hiBin]. Bounds the
+    ///      worst-case LP payout per bin to perBinCap (independent of α·ln(n)).
+    ///      No-op when perBinCap == 0 (disabled). Call BEFORE adding exposure.
+    function _requireExposureWithinCap(
+        uint256 marketId,
+        IIcicleOptionsCore.Market storage market,
+        uint32 loBin,
+        uint32 hiBin,
+        uint128 quantity
+    ) internal view {
+        uint128 cap = market.perBinCap;
+        if (cap == 0) return;
+        uint256 maxExp = ExposureDiffLib.maxInRange(_exposureDiff[marketId], loBin, hiBin);
+        uint256 attempted = maxExp + uint256(quantity);
+        require(attempted <= cap, SE.BinExposureCapExceeded(marketId, loBin, attempted, cap));
+    }
+
+    // --- Dynamic pricing helpers (v2) ---
+
+    /// @dev Reject dynamic trades when the cached oracle is stale (keeper down / no
+    ///      recent refresh). Bounds adverse selection: a trade can never price against
+    ///      a bell older than maxSampleDistance. Pausing trading on a stale oracle is
+    ///      strictly safer than pricing off a stale price.
+    function _requireFreshOracle(IIcicleOptionsCore.Market storage market) internal view {
+        uint256 ts = uint256(market.cachedOracleTs);
+        // ts == 0 => no genuine oracle refresh has happened (creation only seeds the
+        // display anchor). Block trading until refreshTradeOracle posts a real price,
+        // so trades can never price against the stale creation-time anchor.
+        if (ts == 0) revert SE.OracleNotInitializedForTrade();
+        uint256 age = block.timestamp > ts ? block.timestamp - ts : 0;
+        // Unconditional: maxSampleDistance is enforced > 0 at config (initialize /
+        // setRedstoneConfig), so there is no "disabled" path. Fail-safe — if it were ever
+        // 0, this reverts (halts trading) rather than silently disabling freshness.
+        if (age > maxSampleDistance) {
+            revert SE.OracleStaleForTrade(age, maxSampleDistance);
+        }
+    }
+
+    /// @dev Effective bell center & sigma for the current oracle tick + time.
+    function _dynBell(IIcicleOptionsCore.Market storage market)
+        internal
+        view
+        returns (uint256 center, uint256 sigma)
+    {
+        uint32 oBin = PricingLayer.oracleBin(
+            market.cachedOracleTick, market.minTick, market.tickSpacing, market.numBins
+        );
+        center = PricingLayer.centerWad(market.anchorCenterBin, oBin, market.dynW);
+        PricingLayer.Config memory cfg = PricingLayer.Config({
+            w: market.dynW,
+            volBinsWad: market.dynVolBinsWad,
+            sigmaMinWad: market.dynSigmaMinWad,
+            sigmaMaxWad: market.dynSigmaMaxWad,
+            floorWad: market.dynFloorWad
+        });
+        sigma = PricingLayer.sigmaWad(cfg, uint64(block.timestamp), market.startTimestamp, market.endTimestamp);
+    }
+
+    /// @dev Apply the buy factor and return cost. Dynamic markets price against the
+    ///      effective Zeff (base bell x trade factors); static markets use the raw
+    ///      tree sum-change. Execute-first either way.
+    function _executeBuy(
+        uint256 marketId,
+        IIcicleOptionsCore.Market storage market,
+        uint32 loBin,
+        uint32 hiBin,
+        int256 lowerTick,
+        int256 upperTick,
+        uint256 qtyWad
+    ) internal returns (uint256 costWad) {
+        if (market.dynamicEnabled) {
+            _requireFreshOracle(market);
+            (uint256 center, uint256 sigma) = _dynBell(market);
+            LazyMulSegmentTree.Tree storage tree = marketTrees[marketId];
+            uint256 zBefore = PricingLayer.computeZeff(tree, market.numBins, center, sigma, market.dynFloorWad);
+            _applyFactorChunkedByBins(marketId, loBin, hiBin, lowerTick, upperTick, qtyWad, true);
+            uint256 zAfter = PricingLayer.computeZeff(tree, market.numBins, center, sigma, market.dynFloorWad);
+            costWad = ClmsrMath.computeBuyCostFromSumChange(market.liquidityParameter, zBefore, zAfter);
+        } else {
+            (uint256 sumBefore, uint256 sumAfter) = _applyFactorChunkedByBins(
+                marketId, loBin, hiBin, lowerTick, upperTick, qtyWad, true
+            );
+            costWad = ClmsrMath.computeBuyCostFromSumChange(market.liquidityParameter, sumBefore, sumAfter);
+        }
+    }
+
+    /// @dev Apply the sell factor and return proceeds (dynamic Zeff or static raw).
+    function _executeSell(
+        uint256 marketId,
+        IIcicleOptionsCore.Market storage market,
+        uint32 loBin,
+        uint32 hiBin,
+        int256 lowerTick,
+        int256 upperTick,
+        uint256 qtyWad
+    ) internal returns (uint256 proceedsWad) {
+        if (market.dynamicEnabled) {
+            _requireFreshOracle(market);
+            (uint256 center, uint256 sigma) = _dynBell(market);
+            LazyMulSegmentTree.Tree storage tree = marketTrees[marketId];
+            uint256 zBefore = PricingLayer.computeZeff(tree, market.numBins, center, sigma, market.dynFloorWad);
+            _applyFactorChunkedByBins(marketId, loBin, hiBin, lowerTick, upperTick, qtyWad, false);
+            uint256 zAfter = PricingLayer.computeZeff(tree, market.numBins, center, sigma, market.dynFloorWad);
+            proceedsWad = ClmsrMath.computeSellProceedsFromSumChange(market.liquidityParameter, zBefore, zAfter);
+        } else {
+            (uint256 sumBefore, uint256 sumAfter) = _applyFactorChunkedByBins(
+                marketId, loBin, hiBin, lowerTick, upperTick, qtyWad, false
+            );
+            proceedsWad = ClmsrMath.computeSellProceedsFromSumChange(market.liquidityParameter, sumBefore, sumAfter);
         }
     }
 

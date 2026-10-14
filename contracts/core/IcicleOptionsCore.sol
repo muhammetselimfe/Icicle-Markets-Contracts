@@ -128,6 +128,10 @@ contract IcicleOptionsCore is
             revert IcicleOptionsErrors.InvalidFeeSplitSum(params.phiLP, params.phiBS, params.phiTR);
         }
         if (params.lambda == 0 || params.lambda >= WAD) revert IcicleOptionsErrors.InvalidLambda(params.lambda);
+        // maxSampleDistance == 0 is a "disable staleness" sentinel; the trade-freshness gate
+        // (_requireFreshOracle) would then let dynamic trades price against an arbitrarily old
+        // oracle (adverse-selection drain). Require a real bound.
+        if (params.maxSampleDistance == 0) revert IcicleOptionsErrors.InvalidMaxSampleDistance(params.maxSampleDistance);
 
         paymentToken = IERC20(params.paymentToken);
         positionContract = IIcicleOptionsPosition(params.positionContract);
@@ -473,6 +477,30 @@ contract IcicleOptionsCore is
         if (ret.length > 0) marketId = abi.decode(ret, (uint256));
     }
 
+    /// @notice Create a market with v2 oracle-anchored dynamic pricing.
+    /// @dev Forwards msg.data to preserve the DynamicParams tuple without re-encoding.
+    function createMarketDynamic(
+        int256 minTick,
+        int256 maxTick,
+        int256 tickSpacing,
+        uint64 startTimestamp,
+        uint64 endTimestamp,
+        uint64 settlementTimestamp,
+        uint32 numBins,
+        uint256 liquidityParameter,
+        address feePolicy,
+        address seedData,
+        IIcicleOptionsCore.DynamicParams calldata dp
+    ) external onlyOwnerOrOperator returns (uint256 marketId) {
+        (minTick, maxTick, tickSpacing, startTimestamp, endTimestamp, settlementTimestamp, feePolicy, dp); // silence unused
+        _riskGate(abi.encodeCall(
+            IRiskModule.gateCreateMarket,
+            (liquidityParameter, numBins, seedData)
+        ));
+        bytes memory ret = _delegate(lifecycleModule, msg.data);
+        if (ret.length > 0) marketId = abi.decode(ret, (uint256));
+    }
+
     function finalizePrimarySettlement(uint256 marketId) external override onlyOwnerOrOperator {
         _delegate(lifecycleModule, abi.encodeWithSignature("finalizePrimarySettlement(uint256)", marketId));
     }
@@ -521,6 +549,13 @@ contract IcicleOptionsCore is
         _delegate(oracleModule, msg.data);
     }
 
+    /// @notice Refresh the cached oracle tick for a dynamic market's trade pricing.
+    /// @dev Redstone payload appended to calldata; forward msg.data to preserve it.
+    function refreshTradeOracle(uint256 marketId) external whenNotPaused {
+        (marketId); // silence unused parameter warning
+        _delegate(oracleModule, msg.data);
+    }
+
     /// @notice Configure Redstone oracle parameters
     /// @dev Set feed ID, decimals, and timing constraints
     function setRedstoneConfig(
@@ -553,6 +588,21 @@ contract IcicleOptionsCore is
         settlementSubmitWindow = _sampleWindow;
         pendingOpsWindow = _opsWindow;
         claimDelaySeconds = _claimDelay;
+    }
+
+    /// @notice Configure the batch accounting period (seconds). 0 => 86400 daily default.
+    /// @dev Shorter periods realize LP P&L more frequently (e.g. 900 = 15-min batches on testnet).
+    ///      Bounded to [60s, 7 days]. Must be a divisor-aligned value vs the timezone offset is
+    ///      not required, but keep it sane.
+    function setBatchSeconds(uint64 _batchSeconds) external onlyOwner {
+        if (_batchSeconds < 60 || _batchSeconds > 7 * 86_400) revert IcicleOptionsErrors.BatchSecondsOutOfRange(_batchSeconds);
+        // Lock the period once the vault is live. currentBatchId is an absolute window
+        // index on the CURRENT period; changing the period afterwards rescales every future
+        // _toBatchId() while the stored pointer keeps its old-scale value, permanently
+        // bricking processDailyBatch (batchId == currentBatchId+1) and market creation
+        // (settlementBatch > currentBatchId). Set the cadence at deploy, before seeding.
+        if (lpVault.isSeeded) revert IcicleOptionsErrors.BatchPeriodLocked();
+        batchSeconds = _batchSeconds;
     }
 
     /// @notice Get market state (derived from timestamps)

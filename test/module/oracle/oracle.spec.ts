@@ -138,6 +138,18 @@ describe("OracleModule", () => {
       accumulatedFees: 0n,
       minFactor: WAD,
       deltaEt: 0n,
+      dynamicEnabled: false,
+      anchorCenterBin: 0,
+      cachedOracleTs: 0,
+      cachedOracleTick: 0,
+      perBinCap: 0,
+      accumulatedPremiums: 0n,
+      accumulatedProceeds: 0n,
+      dynW: 0n,
+      dynVolBinsWad: 0n,
+      dynSigmaMinWad: 0n,
+      dynSigmaMaxWad: 0n,
+      dynFloorWad: 0n,
     };
     await core.harnessSetMarket(1, market);
     // Seed tree for manualSettleFailedMarket tests that need P&L calculation

@@ -117,6 +117,18 @@ describe("Boundaries", () => {
       accumulatedFees: 0n,
       minFactor: WAD, // uniform prior
       deltaEt: 0n, // Uniform prior: ΔEₜ = 0
+      dynamicEnabled: false,
+      anchorCenterBin: 0,
+      cachedOracleTs: 0,
+      cachedOracleTick: 0,
+      perBinCap: 0,
+      accumulatedPremiums: 0n,
+      accumulatedProceeds: 0n,
+      dynW: 0n,
+      dynVolBinsWad: 0n,
+      dynSigmaMinWad: 0n,
+      dynSigmaMaxWad: 0n,
+      dynFloorWad: 0n,
     };
     await core.setMarket(MARKET_ID, market);
 
@@ -416,6 +428,18 @@ describe("Boundaries", () => {
         accumulatedFees: 0n,
         minFactor: WAD, // uniform prior
         deltaEt: 0n, // Uniform prior: ΔEₜ = 0
+        dynamicEnabled: false,
+        anchorCenterBin: 0,
+        cachedOracleTs: 0,
+        cachedOracleTick: 0,
+        perBinCap: 0,
+        accumulatedPremiums: 0n,
+        accumulatedProceeds: 0n,
+        dynW: 0n,
+        dynVolBinsWad: 0n,
+        dynSigmaMinWad: 0n,
+        dynSigmaMaxWad: 0n,
+        dynFloorWad: 0n,
       };
       await core.setMarket(2, market);
       await core.seedTree(2, Array(10).fill(WAD));
@@ -462,6 +486,18 @@ describe("Boundaries", () => {
         accumulatedFees: 0n,
         minFactor: WAD, // uniform prior
         deltaEt: 0n, // Uniform prior: ΔEₜ = 0
+        dynamicEnabled: false,
+        anchorCenterBin: 0,
+        cachedOracleTs: 0,
+        cachedOracleTick: 0,
+        perBinCap: 0,
+        accumulatedPremiums: 0n,
+        accumulatedProceeds: 0n,
+        dynW: 0n,
+        dynVolBinsWad: 0n,
+        dynSigmaMinWad: 0n,
+        dynSigmaMaxWad: 0n,
+        dynFloorWad: 0n,
       };
       await core.setMarket(3, market);
       await core.seedTree(3, Array(10).fill(WAD));
@@ -508,6 +544,18 @@ describe("Boundaries", () => {
         accumulatedFees: 0n,
         minFactor: WAD, // uniform prior
         deltaEt: 0n, // Uniform prior: ΔEₜ = 0
+        dynamicEnabled: false,
+        anchorCenterBin: 0,
+        cachedOracleTs: 0,
+        cachedOracleTick: 0,
+        perBinCap: 0,
+        accumulatedPremiums: 0n,
+        accumulatedProceeds: 0n,
+        dynW: 0n,
+        dynVolBinsWad: 0n,
+        dynSigmaMinWad: 0n,
+        dynSigmaMaxWad: 0n,
+        dynFloorWad: 0n,
       };
       await core.setMarket(4, market);
       await core.seedTree(4, Array(10).fill(WAD));
@@ -605,6 +653,18 @@ describe("Boundaries", () => {
         accumulatedFees: 0n,
         minFactor: WAD, // uniform prior
         deltaEt: 0n, // Uniform prior: ΔEₜ = 0
+        dynamicEnabled: false,
+        anchorCenterBin: 0,
+        cachedOracleTs: 0,
+        cachedOracleTick: 0,
+        perBinCap: 0,
+        accumulatedPremiums: 0n,
+        accumulatedProceeds: 0n,
+        dynW: 0n,
+        dynVolBinsWad: 0n,
+        dynSigmaMinWad: 0n,
+        dynSigmaMaxWad: 0n,
+        dynFloorWad: 0n,
       };
       await core.setMarket(5, market);
       await core.seedTree(5, Array(10).fill(WAD));
@@ -651,6 +711,18 @@ describe("Boundaries", () => {
         accumulatedFees: 0n,
         minFactor: WAD, // uniform prior
         deltaEt: 0n, // Uniform prior: ΔEₜ = 0
+        dynamicEnabled: false,
+        anchorCenterBin: 0,
+        cachedOracleTs: 0,
+        cachedOracleTick: 0,
+        perBinCap: 0,
+        accumulatedPremiums: 0n,
+        accumulatedProceeds: 0n,
+        dynW: 0n,
+        dynVolBinsWad: 0n,
+        dynSigmaMinWad: 0n,
+        dynSigmaMaxWad: 0n,
+        dynFloorWad: 0n,
       };
       await core.setMarket(6, market);
       await core.seedTree(6, Array(10).fill(WAD));

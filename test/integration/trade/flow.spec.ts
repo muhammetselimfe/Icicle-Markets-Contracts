@@ -104,6 +104,18 @@ describe("TradeModule flow (minimal parity)", () => {
       accumulatedFees: 0n,
       minFactor: WAD, // uniform prior
       deltaEt: 0n, // Uniform prior: ΔEₜ = 0
+      dynamicEnabled: false,
+      anchorCenterBin: 0,
+      cachedOracleTs: 0,
+      cachedOracleTick: 0,
+      perBinCap: 0,
+      accumulatedPremiums: 0n,
+      accumulatedProceeds: 0n,
+      dynW: 0n,
+      dynVolBinsWad: 0n,
+      dynSigmaMinWad: 0n,
+      dynSigmaMaxWad: 0n,
+      dynFloorWad: 0n,
       ...marketOverrides,
     };
     await core.setMarket(1, market);
@@ -210,6 +222,18 @@ describe("TradeModule flow (minimal parity)", () => {
       accumulatedFees: m.accumulatedFees,
       minFactor: m.minFactor,
       deltaEt: m.deltaEt,
+      dynamicEnabled: false,
+      anchorCenterBin: 0,
+      cachedOracleTs: 0,
+      cachedOracleTick: 0,
+      perBinCap: 0,
+      accumulatedPremiums: 0n,
+      accumulatedProceeds: 0n,
+      dynW: 0n,
+      dynVolBinsWad: 0n,
+      dynSigmaMinWad: 0n,
+      dynSigmaMaxWad: 0n,
+      dynFloorWad: 0n,
     };
     await core.setMarket(1, settledMarket);
 
@@ -261,6 +285,18 @@ describe("TradeModule flow (minimal parity)", () => {
       accumulatedFees: m.accumulatedFees,
       minFactor: m.minFactor,
       deltaEt: m.deltaEt,
+      dynamicEnabled: false,
+      anchorCenterBin: 0,
+      cachedOracleTs: 0,
+      cachedOracleTick: 0,
+      perBinCap: 0,
+      accumulatedPremiums: 0n,
+      accumulatedProceeds: 0n,
+      dynW: 0n,
+      dynVolBinsWad: 0n,
+      dynSigmaMinWad: 0n,
+      dynSigmaMaxWad: 0n,
+      dynFloorWad: 0n,
     };
     await core.setMarket(1, earlySettleMarket);
     await expect(core.connect(user).claimPayout(1)).to.be.reverted;
@@ -294,6 +330,18 @@ describe("TradeModule flow (minimal parity)", () => {
       accumulatedFees: m2.accumulatedFees,
       minFactor: m2.minFactor, // Phase 7
       deltaEt: m2.deltaEt, // Phase 7
+      dynamicEnabled: false,
+      anchorCenterBin: 0,
+      cachedOracleTs: 0,
+      cachedOracleTick: 0,
+      perBinCap: 0,
+      accumulatedPremiums: 0n,
+      accumulatedProceeds: 0n,
+      dynW: 0n,
+      dynVolBinsWad: 0n,
+      dynSigmaMinWad: 0n,
+      dynSigmaMaxWad: 0n,
+      dynFloorWad: 0n,
     };
     await core.setMarket(1, claimableMarket);
     await core.connect(user).claimPayout(1);
@@ -333,6 +381,18 @@ describe("TradeModule flow (minimal parity)", () => {
       accumulatedFees: m.accumulatedFees,
       minFactor: m.minFactor,
       deltaEt: m.deltaEt,
+      dynamicEnabled: false,
+      anchorCenterBin: 0,
+      cachedOracleTs: 0,
+      cachedOracleTick: 0,
+      perBinCap: 0,
+      accumulatedPremiums: 0n,
+      accumulatedProceeds: 0n,
+      dynW: 0n,
+      dynVolBinsWad: 0n,
+      dynSigmaMinWad: 0n,
+      dynSigmaMaxWad: 0n,
+      dynFloorWad: 0n,
     };
     await core.setMarket(1, feeMarket);
     await expect(

@@ -26,6 +26,14 @@ interface IcicleOptionsErrors {
     error MarketNotFailed(uint256 marketId);
     error MarketAlreadyFailed(uint256 marketId);
     error MarketAlreadyFinalized(uint256 marketId);
+    error MarketNotDynamic(uint256 marketId);
+    error BinExposureCapExceeded(uint256 marketId, uint32 bin, uint256 attempted, uint128 cap);
+    error OracleStaleForTrade(uint256 ageSeconds, uint256 maxAgeSeconds);
+    error OracleNotInitializedForTrade();
+    error InvalidDynamicParams();
+    error InvalidMaxSampleDistance(uint64 value);
+    error BatchSecondsOutOfRange(uint64 value);
+    error BatchPeriodLocked();
     error SeedDataLengthMismatch(uint256 providedBytes, uint256 expectedBytes);
     error SeedAlreadyComplete(uint256 marketId);
 

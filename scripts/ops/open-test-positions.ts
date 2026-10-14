@@ -1,138 +1,140 @@
 /**
- * Open 10 test positions at different price ranges on the latest Trading market.
+ * Open test positions across 3 markets.
  *
  * Usage:
  *   npx hardhat run scripts/ops/open-test-positions.ts --network fuji
- *
- * Requires DEPLOYER_KEY in env or .env file.
  */
 import hre from "hardhat";
 import { loadEnvironment } from "../utils/environment";
 
-const QUANTITY = 1_000_000n; // 1 USDC per position
-const MAX_COST_BPS_BUFFER = 500; // 5% slippage buffer
+interface MarketJob {
+  marketId: number;
+  name: string;
+  count: number;
+  qtyBase: bigint; // base quantity in 6-dec
+}
+
+const JOBS: MarketJob[] = [
+  // AVAX: 100 done already
+  { marketId: 17, name: "WTI", count: 60, qtyBase: 50_000_000n },   // ~$50 base qty
+  { marketId: 18, name: "XAU", count: 100, qtyBase: 50_000_000n },  // ~$50 base qty
+];
 
 async function main() {
   const { ethers } = hre;
   const envData = loadEnvironment("fuji");
-
   const coreAddress = envData.contracts.IcicleOptionsCoreProxy;
-  if (!coreAddress) throw new Error("Missing core address in fuji.json");
+  if (!coreAddress) throw new Error("Missing IcicleOptionsCoreProxy");
 
   const [deployer] = await ethers.getSigners();
   console.log(`Deployer: ${deployer.address}`);
 
   const core = await ethers.getContractAt("IcicleOptionsCore", coreAddress);
+  const usdc = await ethers.getContractAt("IERC20", envData.contracts.PaymentToken);
 
-  // Find latest market
-  const nextId = await core.nextMarketId();
-  const lastId = Number(nextId);
-  if (lastId === 0) throw new Error("No markets exist");
-
-  // Find the latest Trading market — check if endTimestamp is in the future
-  let marketId = 0;
-  const now = Math.floor(Date.now() / 1000);
-  for (let id = lastId; id >= 1; id--) {
-    const m = await core.markets(BigInt(id));
-    const endTs = Number(m[9]);
-    if (endTs > now) {
-      marketId = id;
-      break;
-    }
+  // Approve
+  const allowance = await usdc.allowance(deployer.address, coreAddress);
+  if (allowance < 50_000_000_000n) {
+    console.log("Approving 50,000 USDC...");
+    const tx = await usdc.approve(coreAddress, 50_000_000_000n);
+    await tx.wait();
   }
-  if (marketId === 0) throw new Error("No active Trading market found");
 
-  // Read market params
-  const marketData = await core.markets(BigInt(marketId));
-  const minTick = Number(marketData[12]); // minTick field index
-  const maxTick = Number(marketData[13]); // maxTick field index
-  const tickSpacing = Number(marketData[14]); // tickSpacing field index
+  for (const job of JOBS) {
+    console.log(`\n=== ${job.name} Market #${job.marketId} (${job.count} positions) ===`);
 
-  const isCentBased = (maxTick - minTick) > 50;
-  const divisor = isCentBased ? 100 : 1;
+    const market = await core.markets(job.marketId);
+    const minTick = Number(market.minTick);
+    const maxTick = Number(market.maxTick);
+    const spacing = Number(market.tickSpacing);
+    const numBins = Number(market.numBins);
+    const center = minTick + Math.floor(numBins / 2) * spacing;
 
-  console.log(`\nMarket #${marketId}`);
-  console.log(`  Range: $${(minTick / divisor).toFixed(2)} – $${(maxTick / divisor).toFixed(2)}`);
-  console.log(`  Tick spacing: ${tickSpacing} (= $${(tickSpacing / divisor).toFixed(2)})`);
+    console.log(`  Range: ${minTick}–${maxTick}, spacing=${spacing}, center=${center}`);
 
-  // Get payment token (USDC)
-  const paymentAddr = await core.paymentToken();
-  const payment = await ethers.getContractAt("IERC20", paymentAddr);
+    let opened = 0;
+    let failed = 0;
 
-  // Pre-approve a generous amount
-  const approveAmount = QUANTITY * 100n; // enough for all positions
-  console.log(`\nApproving ${Number(approveAmount) / 1e6} USDC...`);
-  await (await payment.approve(coreAddress, approveAmount)).wait();
+    for (let i = 0; i < job.count; i++) {
+      // Generate tick range: mix of narrow, medium, and wide
+      let lower: number, upper: number, qty: bigint;
 
-  // Define 10 positions with varying ranges centered around the middle of the market
-  const center = Math.round((minTick + maxTick) / 2 / tickSpacing) * tickSpacing;
-  const positions = [
-    // Narrow positions near center (higher probability density)
-    { lower: center - tickSpacing * 1, upper: center + tickSpacing * 1, qty: QUANTITY * 3n },
-    { lower: center, upper: center + tickSpacing * 2, qty: QUANTITY * 2n },
-    { lower: center - tickSpacing * 2, upper: center, qty: QUANTITY * 2n },
-    // Medium-width positions around center
-    { lower: center - tickSpacing * 3, upper: center + tickSpacing * 3, qty: QUANTITY * 2n },
-    { lower: center + tickSpacing * 1, upper: center + tickSpacing * 5, qty: QUANTITY },
-    { lower: center - tickSpacing * 5, upper: center - tickSpacing * 1, qty: QUANTITY },
-    // Wider positions
-    { lower: center - tickSpacing * 8, upper: center + tickSpacing * 2, qty: QUANTITY },
-    { lower: center - tickSpacing * 2, upper: center + tickSpacing * 8, qty: QUANTITY },
-    // Tail positions (low probability, wide)
-    { lower: minTick, upper: center - tickSpacing * 5, qty: QUANTITY },
-    { lower: center + tickSpacing * 5, upper: maxTick, qty: QUANTITY },
-  ];
-
-  // Clamp all positions within market bounds
-  const clamped = positions.map((p) => ({
-    lower: Math.max(minTick, p.lower),
-    upper: Math.min(maxTick, p.upper),
-    qty: p.qty,
-  })).filter((p) => p.lower < p.upper);
-
-  const tradeArtifact = await hre.artifacts.readArtifact("TradeModule");
-  const tradeIface = new ethers.Interface(tradeArtifact.abi);
-
-  for (let i = 0; i < clamped.length; i++) {
-    const { lower, upper, qty } = clamped[i];
-    const lowerStr = `$${(lower / divisor).toFixed(2)}`;
-    const upperStr = `$${(upper / divisor).toFixed(2)}`;
-
-    try {
-      // Calculate cost
-      const cost = await core.calculateOpenCost.staticCall(
-        BigInt(marketId), BigInt(lower), BigInt(upper), qty,
-      );
-      const maxCost = cost + (cost * BigInt(MAX_COST_BPS_BUFFER)) / 10000n + 1n;
-
-      console.log(`\n[${i + 1}/10] ${lowerStr} – ${upperStr} | qty=${Number(qty) / 1e6} USDC | cost≈$${(Number(cost) / 1e6).toFixed(4)}`);
-
-      const tx = await core.openPosition(
-        BigInt(marketId), BigInt(lower), BigInt(upper), qty, maxCost,
-      );
-      const receipt = await tx.wait();
-
-      // Extract positionId from event
-      let positionId: string = "?";
-      for (const log of receipt?.logs ?? []) {
-        try {
-          const parsed = tradeIface.parseLog(log);
-          if (parsed?.name === "PositionOpened") {
-            positionId = parsed.args.positionId.toString();
-            break;
-          }
-        } catch {
-          // ignore
-        }
+      const mod = i % 5;
+      if (mod === 0) {
+        // Single bin near center
+        const offset = ((i / 5 | 0) - job.count / 10) * spacing;
+        lower = center + offset;
+        upper = lower + spacing;
+        qty = job.qtyBase / 3n; // smaller for single bin
+      } else if (mod === 1) {
+        // 2-3 bins near center
+        const width = (2 + (i % 2)) * spacing;
+        const offset = ((i / 5 | 0) - job.count / 10) * spacing * 2;
+        lower = center + offset;
+        upper = lower + width;
+        qty = job.qtyBase / 2n;
+      } else if (mod === 2) {
+        // 5-8 bins spread across range
+        const width = (5 + (i % 4)) * spacing;
+        const frac = i / job.count;
+        lower = minTick + Math.floor(frac * (numBins - 10) * spacing / spacing) * spacing;
+        upper = lower + width;
+        qty = job.qtyBase;
+      } else if (mod === 3) {
+        // Wide 10-15 bins
+        const width = (10 + (i % 6)) * spacing;
+        const frac = i / job.count;
+        lower = minTick + Math.floor(frac * (numBins - 20) * spacing / spacing) * spacing;
+        upper = lower + width;
+        qty = job.qtyBase * 3n / 2n;
+      } else {
+        // Full-width tail bets
+        const width = (15 + (i % 10)) * spacing;
+        const frac = (i % 20) / 20;
+        lower = minTick + Math.floor(frac * (numBins - 25) * spacing / spacing) * spacing;
+        upper = lower + width;
+        qty = job.qtyBase * 2n;
       }
 
-      console.log(`  ✓ Position #${positionId} | tx: ${tx.hash}`);
-    } catch (err: any) {
-      console.error(`  ✗ Failed: ${err.message?.slice(0, 100)}`);
+      // Clamp
+      lower = Math.max(minTick, lower);
+      upper = Math.min(maxTick, upper);
+      if (upper <= lower) upper = lower + spacing;
+      if (upper > maxTick) { lower = maxTick - spacing; upper = maxTick; }
+
+      // Align
+      lower = Math.floor(lower / spacing) * spacing;
+      upper = Math.ceil(upper / spacing) * spacing;
+      if (lower < minTick) lower = minTick;
+      if (upper > maxTick) upper = maxTick;
+      if (upper <= lower) continue;
+
+      try {
+        const maxCost = qty * 3n + 5_000_000n; // generous buffer
+        const tx = await core.openPosition(job.marketId, lower, upper, qty, maxCost);
+        await tx.wait();
+        opened++;
+
+        if (opened % 10 === 0) {
+          console.log(`  ${opened}/${job.count} opened`);
+        }
+      } catch (err: any) {
+        failed++;
+        if (failed <= 3) {
+          const reason = err.reason || err.message || "";
+          console.error(`  Failed [${lower}–${upper}, qty=${qty}]: ${reason.slice(0, 80)}`);
+        }
+      }
     }
+
+    console.log(`  Done: ${opened} opened, ${failed} failed`);
   }
 
-  console.log("\nDone! 10 positions opened across different price ranges.");
+  // Summary
+  for (const id of [16, 17, 18]) {
+    const m = await core.markets(id);
+    console.log(`Market #${id}: ${m.openPositionCount} positions`);
+  }
 }
 
 main().catch((err) => {

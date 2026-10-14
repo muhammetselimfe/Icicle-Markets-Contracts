@@ -59,6 +59,7 @@ contract MarketLifecycleModule is IcicleOptionsCoreStorage {
     );
     event SettlementTimestampUpdated(uint256 indexed marketId, uint64 settlementTimestamp);
     event MarketFeePolicySet(uint256 indexed marketId, address indexed oldPolicy, address indexed newPolicy);
+    event DynamicMarketConfigured(uint256 indexed marketId, uint256 w, uint256 volBinsWad, uint128 perBinCap);
 
     // Diff array pointQuery is O(n), so limit bins to prevent settlement DoS
     uint32 private constant MAX_BIN_COUNT = 256;
@@ -90,6 +91,80 @@ contract MarketLifecycleModule is IcicleOptionsCoreStorage {
         address feePolicy,
         address seedData
     ) external onlyDelegated returns (uint256 marketId) {
+        marketId = _createMarketCore(
+            minTick, maxTick, tickSpacing, startTimestamp, endTimestamp,
+            settlementTimestamp, numBins, liquidityParameter, feePolicy, seedData
+        );
+    }
+
+    /// @notice Create a market with v2 oracle-anchored, volatility-adaptive pricing.
+    /// @dev Same lifecycle as createMarket plus the dynamic prior config. The oracle
+    ///      tick must be refreshed (refreshTradeOracle) before trading is priced.
+    function createMarketDynamic(
+        int256 minTick,
+        int256 maxTick,
+        int256 tickSpacing,
+        uint64 startTimestamp,
+        uint64 endTimestamp,
+        uint64 settlementTimestamp,
+        uint32 numBins,
+        uint256 liquidityParameter,
+        address feePolicy,
+        address seedData,
+        IIcicleOptionsCore.DynamicParams calldata dp
+    ) external onlyDelegated returns (uint256 marketId) {
+        marketId = _createMarketCore(
+            minTick, maxTick, tickSpacing, startTimestamp, endTimestamp,
+            settlementTimestamp, numBins, liquidityParameter, feePolicy, seedData
+        );
+        // Validate dynamic params at creation, not at first trade. An unbounded w
+        // underflows centerWad ((WAD - w)) and permanently bricks the market; an inverted
+        // sigma range or a sub-MIN_FACTOR floor silently misprices every trade.
+        if (dp.w > WAD) revert SE.InvalidDynamicParams();
+        if (dp.volBinsWad == 0) revert SE.InvalidDynamicParams();
+        if (dp.sigmaMinWad == 0 || dp.sigmaMinWad > dp.sigmaMaxWad) revert SE.InvalidDynamicParams();
+        // floorWad must be in [MIN_FACTOR, WAD). == WAD floors every bin to the peak,
+        // collapsing the bell to uniform (static-like) pricing and silently defeating the
+        // oracle-anchored prior.
+        if (dp.floorWad < LazyMulSegmentTree.MIN_FACTOR || dp.floorWad >= WAD) revert SE.InvalidDynamicParams();
+        // perBinCap is the ONLY hard ceiling on a dynamic market's settlement payout; 0
+        // disables it (_requireExposureWithinCap no-ops), leaving the whole vault exposed.
+        // Require a real cap so per-market loss is bounded by construction.
+        if (dp.perBinCap == 0) revert SE.InvalidDynamicParams();
+        // Reject (don't silently clamp) an out-of-range anchor bin, consistent with the
+        // other params — a typo'd center would otherwise create a mis-centered market.
+        if (dp.anchorCenterBin >= numBins) revert SE.InvalidDynamicParams();
+
+        IIcicleOptionsCore.Market storage m = markets[marketId];
+        m.dynamicEnabled = true;
+        m.anchorCenterBin = dp.anchorCenterBin; // validated < numBins above
+        m.dynW = dp.w;
+        m.dynVolBinsWad = dp.volBinsWad;
+        m.dynSigmaMinWad = dp.sigmaMinWad;
+        m.dynSigmaMaxWad = dp.sigmaMaxWad;
+        m.dynFloorWad = dp.floorWad;
+        m.perBinCap = dp.perBinCap;
+        // Seed the anchor tick only as a display/fallback value. cachedOracleTs is left at
+        // 0 (NOT startTimestamp): the freshness gate treats ts==0 as "no genuine oracle yet"
+        // and blocks trading until the keeper posts a real price via refreshTradeOracle.
+        // Seeding a future ts here would read as age==0 ("fresh") and let the first trades
+        // price against the stale creation-time anchor — an adverse-selection drain at open.
+        m.cachedOracleTick = minTick + int256(uint256(m.anchorCenterBin)) * tickSpacing;
+        emit DynamicMarketConfigured(marketId, dp.w, dp.volBinsWad, dp.perBinCap);
+    }
+
+    function _createMarketCore(
+        int256 minTick,
+        int256 maxTick,
+        int256 tickSpacing,
+        uint64 startTimestamp,
+        uint64 endTimestamp,
+        uint64 settlementTimestamp,
+        uint32 numBins,
+        uint256 liquidityParameter,
+        address feePolicy,
+        address seedData
+    ) internal returns (uint256 marketId) {
         _validateMarketParams(minTick, maxTick, tickSpacing, startTimestamp, endTimestamp, settlementTimestamp);
         require(numBins != 0, SE.BinCountExceedsLimit(0, MAX_BIN_COUNT));
         require(numBins <= MAX_BIN_COUNT, SE.BinCountExceedsLimit(numBins, MAX_BIN_COUNT));
@@ -505,7 +580,7 @@ contract MarketLifecycleModule is IcicleOptionsCoreStorage {
         return _toBatchId(market.settlementTimestamp);
     }
 
-    function _getBatchIdForTimestamp(uint64 settlementTimestamp) internal pure returns (uint64) {
+    function _getBatchIdForTimestamp(uint64 settlementTimestamp) internal view returns (uint64) {
         return _toBatchId(settlementTimestamp);
     }
 
@@ -571,25 +646,26 @@ contract MarketLifecycleModule is IcicleOptionsCoreStorage {
         IIcicleOptionsCore.Market storage market = markets[marketId];
         LazyMulSegmentTree.Tree storage tree = marketTrees[marketId];
         
-        uint256 alpha = market.liquidityParameter;
-        uint256 zStart = market.initialRootSum;
-        
-        // Get current root sum (Z_end) via totalSum() for O(1) access
-        uint256 zEnd = tree.totalSum();
-        
-        // ΔC_t = α * (ln(Z_end) - ln(Z_start)) = C(q_end) - C(q_start)
         int256 deltaC;
-        uint256 lnZEnd = zEnd.wLn();
-        uint256 lnZStart = zStart.wLn();
-        
-        if (lnZEnd >= lnZStart) {
-            // Maker profit: Z increased (cost increased, traders net bought)
-            deltaC = int256(alpha.wMul(lnZEnd - lnZStart));
+        if (market.dynamicEnabled) {
+            // CRITICAL: under a dynamic base, per-trade costs use the effective Zeff
+            // (base bell x trade factors) and do NOT telescope to α*ln(Z_end/Z_start).
+            // Use realized cash flows instead (premiums collected - proceeds paid).
+            deltaC = int256(market.accumulatedPremiums) - int256(market.accumulatedProceeds);
         } else {
-            // Maker loss: Z decreased (cost decreased, traders net sold)
-            deltaC = -int256(alpha.wMul(lnZStart - lnZEnd));
+            // Legacy STATIC markets: telescoping holds, derive from the tree root.
+            uint256 alpha = market.liquidityParameter;
+            uint256 zStart = market.initialRootSum;
+            uint256 zEnd = tree.totalSum();
+            uint256 lnZEnd = zEnd.wLn();
+            uint256 lnZStart = zStart.wLn();
+            if (lnZEnd >= lnZStart) {
+                deltaC = int256(alpha.wMul(lnZEnd - lnZStart));
+            } else {
+                deltaC = -int256(alpha.wMul(lnZStart - lnZEnd));
+            }
         }
-        
+
         // Payout_t := Q_{t,τ_t} (WP v2 Eq. 3.11)
         // Get payout exposure at settlement tick using diff-array point query
         payoutReserve = _getExposureAtTick(marketId, market.minTick, market.tickSpacing, market.numBins, settlementTick);

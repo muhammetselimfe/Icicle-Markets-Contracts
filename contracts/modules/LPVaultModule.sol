@@ -276,6 +276,11 @@ contract LPVaultModule is IcicleOptionsCoreStorage {
         // Once batch is processed, deposit is already reflected in NAV/shares
         // Allowing cancel would enable double-spending of funds
         if (_batchAggregations[eligibleBatchId].processed) revert SE.CancelTooLate(requestId, eligibleBatchId);
+        // Prevent cancel once the eligible batch has STARTED settling: its P&L is then
+        // observable on-chain (getDailyPnl / getBatchMarketState), so a late cancel would
+        // be a risk-free option (back out of a now-known adverse batch). Cancellation is
+        // only allowed while the batch outcome is still unknown (resolved == 0).
+        if (_batchMarketState[eligibleBatchId].resolved > 0) revert SE.CancelTooLate(requestId, eligibleBatchId);
 
         req.status = RequestStatus.Cancelled;
         _pendingBatchTotals[eligibleBatchId].deposits -= amountWad;
@@ -307,6 +312,9 @@ contract LPVaultModule is IcicleOptionsCoreStorage {
         // Prevent cancel after batch processed (too-late check)
         // Once batch is processed, withdrawal is reserved in vault accounting
         if (_batchAggregations[eligibleBatchId].processed) revert SE.CancelTooLate(requestId, eligibleBatchId);
+        // Prevent cancel once the eligible batch has STARTED settling (P&L observable):
+        // a late cancel would be a risk-free option (stay in for a now-known gain).
+        if (_batchMarketState[eligibleBatchId].resolved > 0) revert SE.CancelTooLate(requestId, eligibleBatchId);
 
         req.status = RequestStatus.Cancelled;
         _pendingBatchTotals[eligibleBatchId].withdraws -= shares;

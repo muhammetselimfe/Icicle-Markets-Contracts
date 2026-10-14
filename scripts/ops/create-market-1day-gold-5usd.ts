@@ -16,7 +16,7 @@ import { loadEnvironment } from "../utils/environment";
 const WAD = 10n ** 18n;
 
 // --- Config ---
-const ANCHOR_PRICE = 5180; // $5,180 in dollars
+const ANCHOR_PRICE = 5200; // $5,200 in dollars
 const TICK_SPACING = 5; // $5 per bin
 const NUM_BINS = 100; // range: ~±$250 from anchor
 const DURATION_SEC = 24 * 60 * 60; // 1 day
@@ -29,7 +29,7 @@ async function main() {
   const envData = loadEnvironment("fuji");
 
   const coreAddress = envData.contracts.IcicleOptionsCoreProxy;
-  const feePolicyAddress = envData.contracts.FeePolicy10bps;
+  const feePolicyAddress = envData.contracts.FeePolicy100bps;
   if (!coreAddress || !feePolicyAddress) {
     throw new Error("Missing core or feePolicy address in fuji.json");
   }

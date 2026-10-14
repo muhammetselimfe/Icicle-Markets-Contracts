@@ -33,6 +33,10 @@ yarn test                    # Hardhat tests
 
 ## Market Creation
 
+**IMPORTANT: Always fetch the current live price before creating a market.** Use the Redstone API or on-chain oracle to get the real-time price and set `ANCHOR_PRICE` accordingly. Never reuse a hardcoded anchor price from a previous script — it will be stale.
+
+**IMPORTANT: Use the correct tick unit per asset.** AVAX uses cent-based ticks (tickDivisor=100, e.g. $10.35 → tick 1035). WTI and XAU use dollar-based ticks (tickDivisor=1, e.g. $98 → tick 98, $5009 → tick 5009). Using cent ticks for WTI/XAU creates absurd tick ranges (500K+) that the frontend misidentifies as BTC. Tick spacing must also match: AVAX spacing=5 ($0.05/bin), WTI spacing=1 ($1/bin), XAU spacing=5 ($5/bin).
+
 ### Create Market Scripts
 ```bash
 # 15-min test market, $1 ticks (Fuji)
@@ -141,6 +145,35 @@ const seedData = await SeedDataFactory.deploy(packed);
 - Settlement: signed-pull oracle via `OracleModule.sol`
 - Frontend live price: `api.redstone.finance` REST API (same source)
 - Settlement windows: submit=600s, pendingOps=300s, claimDelay=900s
+- Redstone price update frequency: ~60 seconds
+
+### Settlement Value Format (CRITICAL)
+The contract converts settlementValue to a tick via: `tick = settlementValue / 1_000_000`
+
+**Formula: `settlementValue = price_usd * tickDivisor * 1_000_000`**
+
+| Asset | Tick unit | tickDivisor | Example price | settlementValue | Resulting tick |
+|-------|-----------|-------------|---------------|-----------------|----------------|
+| AVAX  | cents     | 100         | $9.39         | 939_000_000     | 939            |
+| WTI   | dollars   | 1           | $106          | 106_000_000     | 106            |
+| XAU   | dollars   | 1           | $2,900        | 2_900_000_000   | 2900           |
+| BTC   | dollars   | 1           | $85,000       | 85_000_000_000  | 85000          |
+
+**Wrong:** `price * 1e6` for AVAX gives tick in dollars (9), not cents (939).
+**Right:** `price * 100 * 1e6` for AVAX gives correct cent-based tick.
+
+### Batch Processing (CRITICAL)
+**NEVER process empty or future batches.** The contract uses `currentBatchId` to gate market creation: `createMarket` requires `settlementBatch > currentBatchId`. Processing an empty batch advances the pointer, which blocks all market creation for that entire batch window (8 hours). Only process a batch when it contains settled market P&L data, and only when explicitly asked.
+
+**Batch boundaries use `BATCH_TIMEZONE_OFFSET = 28800` (8h UTC).** Batches run from 08:00 UTC to 08:00 UTC (midnight PST), NOT midnight UTC. Formula: `batchId = (timestamp - 28800) / 86400`. Batch start: `batchId * 86400 + 28800`.
+
+### Secondary Settlement (Manual Fallback)
+When oracle settlement is missed (window expires without `submitSettlementSample`):
+1. `markSettlementFailed(marketId)` — owner/operator marks oracle as absent
+2. `finalizeSecondarySettlement(marketId, settlementValue)` — owner settles with manual price
+3. `requestSettlementChunks(marketId, 25)` — snapshot positions (may auto-complete)
+
+Script: `npx hardhat run scripts/ops/settle-all-expired.ts --network fuji`
 
 ## Style
 - OpenZeppelin conventions, NatSpec comments required

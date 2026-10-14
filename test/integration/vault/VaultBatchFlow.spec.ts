@@ -517,6 +517,45 @@ describe("VaultBatchFlow Integration", () => {
       expect(balanceAfter - balanceBefore).to.equal(usdc("100"));
     });
 
+    it("blocks deposit cancel once the eligible batch starts settling (free-option fix)", async () => {
+      const { proxy, userB, module, firstBatchId } = await loadFixture(
+        deploySeededVaultFixture
+      );
+
+      await proxy.connect(userB).requestDeposit(usdc("100")); // eligible for firstBatchId
+      // A market settles into firstBatchId: P&L is now recorded & observable on-chain
+      // (resolved > 0), but the batch is NOT yet processed. A late cancel here would be
+      // a risk-free option (back out of a now-known adverse batch).
+      await proxy.harnessRecordPnl(
+        firstBatchId,
+        ethers.parseEther("-50"),
+        0n,
+        DEFAULT_DELTA_ET
+      );
+
+      await expect(
+        proxy.connect(userB).cancelDeposit(0n)
+      ).to.be.revertedWithCustomError(module, "CancelTooLate");
+    });
+
+    it("blocks withdraw cancel once the eligible batch starts settling (free-option fix)", async () => {
+      const { proxy, userA, module, firstBatchId } = await loadFixture(
+        deploySeededVaultFixture
+      );
+
+      await proxy.connect(userA).requestWithdraw(ethers.parseEther("100")); // lag 0 -> firstBatchId
+      await proxy.harnessRecordPnl(
+        firstBatchId,
+        ethers.parseEther("100"),
+        0n,
+        DEFAULT_DELTA_ET
+      );
+
+      await expect(
+        proxy.connect(userA).cancelWithdraw(0n)
+      ).to.be.revertedWithCustomError(module, "CancelTooLate");
+    });
+
     it("prevents cancel after claim", async () => {
       const { proxy, userB, module, firstBatchId } = await loadFixture(
         deploySeededVaultFixture

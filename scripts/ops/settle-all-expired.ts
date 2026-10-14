@@ -27,6 +27,19 @@ const CHUNK_SIZE = 25;
 
 type AssetType = "AVAX" | "WTI" | "XAU" | "BTC" | "UNKNOWN";
 
+// Tick divisor: how many tick units per dollar.
+// Contract converts settlementValue to tick via: tick = settlementValue / 1e6
+// So settlementValue must equal tick * 1e6, i.e. price * tickDivisor * 1e6.
+//   AVAX ticks are cents (900 = $9.00) → divisor = 100
+//   WTI/XAU/BTC ticks are dollars      → divisor = 1
+const TICK_DIVISOR: Record<AssetType, number> = {
+  AVAX: 100,
+  WTI: 1,
+  XAU: 1,
+  BTC: 1,
+  UNKNOWN: 1,
+};
+
 function detectAsset(minTick: bigint): AssetType {
   const min = Number(minTick);
   if (min < 30) return "AVAX";       // legacy dollar-tick AVAX markets
@@ -37,15 +50,18 @@ function detectAsset(minTick: bigint): AssetType {
   return "UNKNOWN";
 }
 
-async function fetchRedstonePrice(feedId: string): Promise<bigint> {
+async function fetchRedstonePrice(feedId: string, tickDivisor: number): Promise<bigint> {
   const url = `https://api.redstone.finance/prices?symbol=${feedId}&provider=redstone&limit=1`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = (await res.json()) as Array<{ value: number }>;
   const price = data[0]?.value;
   if (!price || price <= 0) throw new Error(`Invalid price for ${feedId}`);
-  const value = BigInt(Math.round(price * 1_000_000));
-  console.log(`[fetch] ${feedId} price: $${price} → ${value} (6 dec)`);
+  // settlementValue = price * tickDivisor * 1e6
+  // so that _toSettlementTick gives: settlementValue / 1e6 = price * tickDivisor = correct tick
+  const value = BigInt(Math.round(price * tickDivisor * 1_000_000));
+  const expectedTick = Number(value / 1_000_000n);
+  console.log(`[fetch] ${feedId} price: $${price}, tickDivisor: ${tickDivisor}, settlementValue: ${value}, expectedTick: ${expectedTick}`);
   return value;
 }
 
@@ -54,23 +70,28 @@ const priceCache = new Map<string, bigint>();
 
 async function getSettlementValue(asset: AssetType): Promise<bigint> {
   const feedId = asset === "UNKNOWN" ? "AVAX" : asset;
+  const tickDivisor = TICK_DIVISOR[asset];
   if (priceCache.has(feedId)) return priceCache.get(feedId)!;
 
   try {
-    const value = await fetchRedstonePrice(feedId);
+    const value = await fetchRedstonePrice(feedId, tickDivisor);
     priceCache.set(feedId, value);
     return value;
   } catch (err: any) {
     console.warn(`[fetch] Could not fetch ${feedId} price: ${err.message}`);
-    // Fallback values
+    // Fallback values (already in correct settlementValue format: tick * 1e6)
+    // AVAX: tick 888 ($8.88) → 888_000_000
+    // WTI: tick 106 ($106) → 106_000_000
+    // XAU: tick 2900 ($2,900) → 2_900_000_000
+    // BTC: tick 85000 ($85,000) → 85_000_000_000
     const fallbacks: Record<string, bigint> = {
-      AVAX: 8_880_000n,   // $8.88
-      WTI: 106_000_000n,  // $106
-      XAU: 2_900_000_000n, // $2,900
-      BTC: 85_000_000_000n, // $85,000
+      AVAX: 888_000_000n,
+      WTI: 106_000_000n,
+      XAU: 2_900_000_000n,
+      BTC: 85_000_000_000n,
     };
-    const fallback = fallbacks[feedId] ?? 8_880_000n;
-    console.warn(`[fetch] Using fallback: $${Number(fallback) / 1_000_000}`);
+    const fallback = fallbacks[feedId] ?? 888_000_000n;
+    console.warn(`[fetch] Using fallback: expectedTick=${Number(fallback / 1_000_000n)}`);
     priceCache.set(feedId, fallback);
     return fallback;
   }

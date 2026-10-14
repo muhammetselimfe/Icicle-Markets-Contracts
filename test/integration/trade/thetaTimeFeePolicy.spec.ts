@@ -77,6 +77,18 @@ describe("TradeModule + ThetaTimeFeePolicy", () => {
       accumulatedFees: market.accumulatedFees,
       minFactor: market.minFactor,
       deltaEt: market.deltaEt,
+      dynamicEnabled: false,
+      anchorCenterBin: 0,
+      cachedOracleTs: 0,
+      cachedOracleTick: 0,
+      perBinCap: 0,
+      accumulatedPremiums: 0n,
+      accumulatedProceeds: 0n,
+      dynW: 0n,
+      dynVolBinsWad: 0n,
+      dynSigmaMinWad: 0n,
+      dynSigmaMaxWad: 0n,
+      dynFloorWad: 0n,
     });
     const endTimestamp = BigInt(market.endTimestamp);
 

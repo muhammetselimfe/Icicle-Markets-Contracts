@@ -6,14 +6,14 @@
   "create2Factory": "0xE0C6e0264DAd64654901A2466ADA26483A326760",
   "contracts": {
     "IcicleOptionsCreate2Factory": "0xE0C6e0264DAd64654901A2466ADA26483A326760",
-    "IcicleOptionsDeployer": "0xdA104D8c6d97fEe2e95Fe60C9D5a5bB7f85FD1D3",
-    "IcicleOptionsCoreProxy": "0x5163b4aB77650D1D937a5c5E6B0d012e4659546e",
-    "IcicleOptionsPositionProxy": "0x3FD90718b2aA7D15417d1d494b653c7EF44dff70",
-    "IcicleOptionsLPShareProxy": "0xf8Ea96283fA5726fb64f3C57695a333Ce007B56a",
-    "IcicleOptionsLPShare": "0xf8Ea96283fA5726fb64f3C57695a333Ce007B56a",
-    "IcicleOptionsCoreImplementation": "0x4801835D663d2bC850D190839BB67dAD01a94fC4",
-    "IcicleOptionsPositionImplementation": "0x5a2dAAdB2d032d9c203162ca5Aa12869690fb522",
-    "IcicleOptionsLPShareImplementation": "0x3B6DF25399F47f11FAD4b30F43787805FC802049"
+    "IcicleOptionsDeployer": "0xeA810aC8eF7863A101afAc14fDB8fa96151aB669",
+    "IcicleOptionsCoreProxy": "0x516F1301b7546220a5c575d21B8D34A35210E646",
+    "IcicleOptionsPositionProxy": "0x795b7E5Adddd23FDD97B71980fe8C667F6Ee76Ce",
+    "IcicleOptionsLPShareProxy": "0xcde46B5A9dc0233097Dd1Fb296086d42928656d1",
+    "IcicleOptionsLPShare": "0xcde46B5A9dc0233097Dd1Fb296086d42928656d1",
+    "IcicleOptionsCoreImplementation": "0x8F66d38830930497F0C1d5231E1Db6B14B26F076",
+    "IcicleOptionsPositionImplementation": "0x541509b562FC652A37613e83c91455f33ebEF8fa",
+    "IcicleOptionsLPShareImplementation": "0x325AD2B4401Bc8BaeC0a5d4073a9b2c139f90449"
   },
   "create2": {
     "vanityPrefix": "0x516",
@@ -24,8 +24,8 @@
         "salt": "0xe5b218341b1353d6782b295fb2dad7b3ff2077bbfb48d6a9d5910c86107b8653"
       },
       "CORE_PROXY": {
-        "nonce": 8859,
-        "salt": "0xe2a2ef70cf7bd011eb653f372e75dc73e2c87ce34ff73b6470d6e910ae1f3eac"
+        "nonce": 1590,
+        "salt": "0xc4950618cb019cef6aa61130b386ee3019e4630644d4ff068729ff957f3ff19f"
       },
       "POSITION_PROXY": {
         "nonce": 0,
@@ -37,10 +37,10 @@
       }
     },
     "initCodeHash": {
-      "DEPLOYER": "0x7b9f494a7b06c5e566799c2267ca11f7fdd28f1b9a3a70dce53b9be4142c7552",
-      "CORE_PROXY": "0x7ba320a294190d1ddb2ddb5ca96b074f24892d2259b4b85a972d8e9499196d94",
-      "POSITION_PROXY": "0xb7db22739b031d23dc6a1d954597021c5555f4992f4ad8148e9471c0bf6cb3b4",
-      "LPSHARE_PROXY": "0x19d3178c13ce913ebee851c392109220bbc56c875b0f9f06ac9dd6240e882280"
+      "DEPLOYER": "0x2c2f622c4509efec0a1cde879a2a544dfb7b0808751cc06ea3ae974f3b21e6a7",
+      "CORE_PROXY": "0xc931ff5d01ee9edaeb4022175bed5bf1612e101e21f86e08c0b4e1c418068f54",
+      "POSITION_PROXY": "0x7787cf1ffc453060f25807a8d0933cec3aef279b4382bc3b292e76ef0d39b393",
+      "LPSHARE_PROXY": "0x0bcb4aef2ecd538ab15bd27ecb79e15261099d4f3732166aadedc6e113fe0eb3"
     }
   }
 }

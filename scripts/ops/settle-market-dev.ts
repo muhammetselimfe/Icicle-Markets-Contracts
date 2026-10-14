@@ -1,3 +1,27 @@
+/**
+ * Settle a market using Redstone primary oracle (signed-pull).
+ *
+ * Handles per-asset oracle config:
+ *   - AVAX ticks are in cents (tickDivisor=100) → feedDecimals=6
+ *   - BTC/WTI/XAU ticks are in dollars (tickDivisor=1) → feedDecimals=8
+ *
+ * The Redstone feed returns prices with 8 decimals.
+ * The contract converts: settlementValue = price / 10^(feedDecimals - 6)
+ * Then: tick = settlementValue / 1e6
+ *
+ * For AVAX at $9.88:
+ *   Redstone value = 988,000,000 (8 dec)
+ *   feedDecimals=6 → no scaling → settlementValue = 988,000,000
+ *   tick = 988 (cents) = $9.88 ✓
+ *
+ * For BTC at $85,000:
+ *   Redstone value = 8,500,000,000,000 (8 dec)
+ *   feedDecimals=8 → scale down by 100 → settlementValue = 85,000,000,000
+ *   tick = 85,000 (dollars) ✓
+ *
+ * Usage:
+ *   npx hardhat run scripts/ops/settle-market-dev.ts --network fuji
+ */
 import hre from "hardhat";
 import { WrapperBuilder } from "@redstone-finance/evm-connector";
 import { getSignersForDataServiceId, type DataServiceIds } from "@redstone-finance/sdk";
@@ -45,7 +69,7 @@ const CONFIG: SettleConfig = {
   },
   redstone: {
     dataServiceId: "redstone-primary-prod",
-    dataFeedId: "BTC",
+    dataFeedId: "AVAX",
     uniqueSigners: 3,
   },
   timing: {
@@ -64,6 +88,25 @@ const CONFIG: SettleConfig = {
 
 const BATCH_SECONDS = 86400n;
 const BATCH_TIMEZONE_OFFSET = 8n * 3600n;
+
+/**
+ * Per-asset oracle config.
+ *
+ * Redstone returns all prices with 8 decimals.
+ * feedDecimals controls how the contract scales to settlementValue:
+ *   settlementValue = redstonePrice / 10^(feedDecimals - 6)
+ *   tick = settlementValue / 1e6
+ *
+ * For cent-based ticks (AVAX): feedDecimals=6 → no scaling → tick in cents ✓
+ * For dollar-based ticks (BTC/WTI/XAU): feedDecimals=8 → /100 → tick in dollars ✓
+ */
+const ASSET_ORACLE_CONFIG: Record<string, { feedDecimals: number; tickDivisor: number }> = {
+  AVAX: { feedDecimals: 6, tickDivisor: 100 },
+  BTC:  { feedDecimals: 8, tickDivisor: 1 },
+  WTI:  { feedDecimals: 8, tickDivisor: 1 },
+  XAU:  { feedDecimals: 8, tickDivisor: 1 },
+  ETH:  { feedDecimals: 8, tickDivisor: 1 },
+};
 
 function toBatchId(timestamp: bigint): bigint {
   if (timestamp < BATCH_TIMEZONE_OFFSET) return 0n;
@@ -98,6 +141,7 @@ async function main() {
     v5Signer
   );
 
+  // --- Enforce settlement timeline ---
   if (CONFIG.timeline.enforce) {
     const submitWindow = await core.settlementSubmitWindow();
     const pendingOps = await core.pendingOpsWindow();
@@ -122,6 +166,7 @@ async function main() {
   const pendingOpsSec = Number(await core.pendingOpsWindow());
   const maxSampleDistance = Number(await core.maxSampleDistance());
 
+  // --- Resolve market ---
   const marketId =
     CONFIG.marketId > 0 ? BigInt(CONFIG.marketId) : await core.nextMarketId();
   const marketIdValue = marketId.toString();
@@ -133,6 +178,32 @@ async function main() {
     throw new Error(`Market already settled: ${marketId.toString()}`);
   }
 
+  // --- Set per-asset oracle config (feedId + feedDecimals) ---
+  const feedId = CONFIG.redstone.dataFeedId;
+  const assetConfig = ASSET_ORACLE_CONFIG[feedId];
+  if (!assetConfig) {
+    throw new Error(`Unknown asset feed: ${feedId}. Add it to ASSET_ORACLE_CONFIG.`);
+  }
+
+  const currentFeedDecimals = Number(await core.redstoneFeedDecimals());
+  const currentFeedId = await core.redstoneFeedId();
+  const expectedFeedIdBytes = ethers.encodeBytes32String(feedId);
+
+  if (currentFeedDecimals !== assetConfig.feedDecimals || currentFeedId !== expectedFeedIdBytes) {
+    console.log(
+      `[settle-market-dev] setRedstoneConfig feedId=${feedId} feedDecimals=${assetConfig.feedDecimals} (was ${currentFeedDecimals})`
+    );
+    await (await core.setRedstoneConfig(
+      expectedFeedIdBytes,
+      assetConfig.feedDecimals,
+      maxSampleDistance,
+      Number(await core.futureTolerance()),
+    )).wait();
+  } else {
+    console.log(`[settle-market-dev] oracle config OK: feedId=${feedId} feedDecimals=${assetConfig.feedDecimals}`);
+  }
+
+  // --- Adjust timing for immediate settlement ---
   const latestBlock = await ethers.provider.getBlock("latest");
   const now = latestBlock?.timestamp ?? Math.floor(Date.now() / 1000);
 
@@ -162,6 +233,7 @@ async function main() {
     settlementTimestamp
   )).wait();
 
+  // --- Submit Redstone oracle price ---
   const authorizedSigners = getSignersForDataServiceId(CONFIG.redstone.dataServiceId);
   const wrapped = WrapperBuilder.wrap(coreV5).usingDataService({
     dataServiceId: CONFIG.redstone.dataServiceId,
@@ -170,20 +242,32 @@ async function main() {
     authorizedSigners,
   });
 
-  console.log(`[settle-market-dev] submitSettlementSample marketId=${marketIdValue}`);
+  console.log(`[settle-market-dev] submitSettlementSample marketId=${marketIdValue} feed=${feedId}`);
   await (await wrapped.submitSettlementSample(marketIdValue)).wait();
 
-  const opsStart = settlementTimestamp + submitWindowSec;
+  // --- Wait for PendingOps to end ---
+  const opsEnd = settlementTimestamp + submitWindowSec + pendingOpsSec;
   const nowAfterSubmit = Math.floor(Date.now() / 1000);
-  const waitSec = opsStart - nowAfterSubmit;
+  const waitSec = opsEnd - nowAfterSubmit;
   if (waitSec > 0) {
-    console.log(`[settle-market-dev] waiting ${waitSec}s for PendingOps start`);
+    console.log(`[settle-market-dev] waiting ${waitSec}s for PendingOps end`);
     await sleep((waitSec + 1) * 1000);
   }
 
+  // --- Finalize ---
   console.log(`[settle-market-dev] finalizePrimarySettlement marketId=${marketId.toString()}`);
   await (await core.finalizePrimarySettlement(marketId)).wait();
 
+  // --- Verify settlement ---
+  const settled = await core.markets(marketId);
+  const settlementTick = settled[15]; // settlementTick field
+  const settlementValue = settled[16]; // settlementValue field
+  const tickPrice = Number(settlementTick) / assetConfig.tickDivisor;
+  console.log(
+    `[settle-market-dev] settled! tick=${settlementTick} ($${tickPrice.toFixed(2)}) settlementValue=${settlementValue}`
+  );
+
+  // --- Settlement chunks ---
   if (CONFIG.chunks.run) {
     let updated = await core.markets(marketId);
     let calls = 0;
@@ -198,6 +282,7 @@ async function main() {
     }
   }
 
+  // --- Optional batch processing ---
   if (CONFIG.batch.run) {
     const tSet = BigInt(settlementTimestamp);
     const batchId = toBatchId(tSet);

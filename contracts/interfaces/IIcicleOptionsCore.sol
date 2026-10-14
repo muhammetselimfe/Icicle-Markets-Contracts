@@ -48,6 +48,32 @@ interface IIcicleOptionsCore {
         // ΔEₜ := E_ent(q₀,t) - αₜ ln n
         // Used in batch processing: grantNeed > ΔEₜ → revert
         uint256 deltaEt;
+
+        // ---- v2 dynamic pricing (appended; default 0/false = legacy static) ----
+        bool dynamicEnabled;        // true → oracle-anchored, volatility-adaptive prior
+        uint32 anchorCenterBin;     // creation-time center bin (used when w < 1)
+        uint64 cachedOracleTs;      // timestamp of cachedOracleTick (staleness)
+        int256 cachedOracleTick;    // last refreshed oracle tick for trade pricing
+        uint128 perBinCap;          // max payout (6-dec qty) per bin; 0 = no cap
+        uint256 accumulatedPremiums;// realized cash collected on opens/increases (WAD)
+        uint256 accumulatedProceeds;// realized cash paid on decreases/closes (WAD)
+        // dynamic prior config (PricingLayer.Config, flattened to avoid lib import here)
+        uint256 dynW;               // anchoring weight, WAD [0,1e18]
+        uint256 dynVolBinsWad;      // terminal-price std in bins, WAD
+        uint256 dynSigmaMinWad;     // min bell width, WAD
+        uint256 dynSigmaMaxWad;     // max bell width, WAD
+        uint256 dynFloorWad;        // min base factor, WAD
+    }
+
+    // v2 dynamic-market creation params (grouped to keep the signature flat)
+    struct DynamicParams {
+        uint256 w;            // anchoring weight, WAD [0,1e18]
+        uint256 volBinsWad;   // terminal-price std in bins, WAD
+        uint256 sigmaMinWad;  // min bell width, WAD
+        uint256 sigmaMaxWad;  // max bell width, WAD
+        uint256 floorWad;     // min base factor, WAD
+        uint128 perBinCap;    // max payout (6-dec qty) per bin; 0 = no cap
+        uint32 anchorCenterBin; // creation-time center bin (used when w < 1)
     }
 
     // Trade / lifecycle entrypoints

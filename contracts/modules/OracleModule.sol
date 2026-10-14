@@ -43,6 +43,37 @@ contract OracleModule is IcicleOptionsCoreStorage, PrimaryProdDataServiceConsume
         uint64 distance
     );
 
+    event TradeOracleRefreshed(uint256 indexed marketId, int256 tick, uint64 priceTimestamp);
+
+    /// @notice Refresh the cached oracle tick used to price dynamic-market trades.
+    /// @dev Redstone signed-pull (payload appended to calldata). Permissionless/keeper.
+    ///      Reuses the same staleness/future guards as settlement (maxSampleDistance,
+    ///      futureTolerance). Only valid for dynamicEnabled markets.
+    function refreshTradeOracle(uint256 marketId) external onlyDelegated {
+        IIcicleOptionsCore.Market storage market = markets[marketId];
+        require(market.numBins != 0, SE.MarketNotFound(marketId));
+        require(market.dynamicEnabled, SE.MarketNotDynamic(marketId));
+        require(!market.settled, SE.MarketAlreadySettled(marketId));
+
+        uint256 price = getOracleNumericValueFromTxMsg(redstoneFeedId);
+        uint256 timestampMs = extractTimestampsAndAssertAllAreEqual();
+        uint64 priceTimestamp = uint64(timestampMs / 1000);
+        uint64 nowTs = uint64(block.timestamp);
+
+        // not-in-future
+        require(priceTimestamp <= nowTs + futureTolerance, SE.OracleSampleInFuture(priceTimestamp, nowTs));
+        // freshness: maxSampleDistance is enforced > 0 at config, so this is unconditional
+        // (no "0 = disabled" path that could leave the cache staleness-unbounded).
+        uint64 age = nowTs > priceTimestamp ? nowTs - priceTimestamp : 0;
+        require(age <= maxSampleDistance, SE.OracleSampleTooFarFromTset(age, maxSampleDistance));
+
+        int256 settlementValue = _convertPriceToSettlementValue(price);
+        int256 tick = _toSettlementTick(market, settlementValue);
+        market.cachedOracleTick = tick;
+        market.cachedOracleTs = priceTimestamp;
+        emit TradeOracleRefreshed(marketId, tick, priceTimestamp);
+    }
+
     event OracleConfigUpdated(
         bytes32 feedId,
         uint8 feedDecimals,
@@ -65,6 +96,8 @@ contract OracleModule is IcicleOptionsCoreStorage, PrimaryProdDataServiceConsume
         uint64 _maxSampleDistance,
         uint64 _futureTolerance
     ) external onlyDelegated {
+        // Never 0: that disables the trade-freshness gate and re-opens stale-oracle adverse selection.
+        if (_maxSampleDistance == 0) revert SE.InvalidMaxSampleDistance(_maxSampleDistance);
         redstoneFeedId = feedId;
         redstoneFeedDecimals = feedDecimals;
         maxSampleDistance = _maxSampleDistance;
@@ -109,7 +142,8 @@ contract OracleModule is IcicleOptionsCoreStorage, PrimaryProdDataServiceConsume
         uint64 distance = priceTimestamp >= tSet
             ? priceTimestamp - tSet
             : tSet - priceTimestamp;
-        require(maxSampleDistance == 0 || distance <= maxSampleDistance, SE.OracleSampleTooFarFromTset(distance, maxSampleDistance));
+        // maxSampleDistance is enforced > 0 at config -> unconditional (no disabled path).
+        require(distance <= maxSampleDistance, SE.OracleSampleTooFarFromTset(distance, maxSampleDistance));
 
         // Convert price to settlementValue (scale from feedDecimals to 6 decimals)
         int256 settlementValue = _convertPriceToSettlementValue(price);

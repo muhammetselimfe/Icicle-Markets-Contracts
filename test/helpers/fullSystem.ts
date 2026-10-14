@@ -35,6 +35,13 @@ export interface DeployFullSystemOptions {
   submitWindow?: number;
   opsWindow?: number;
   claimDelay?: number;
+  // fee waterfall overrides (WAD); defaults preserve existing behavior (all fees to LP)
+  phiLP?: bigint;
+  phiBS?: bigint;
+  phiTR?: bigint;
+  rhoBS?: bigint;
+  lambda?: bigint;
+  maxSampleDistance?: number;
 }
 
 export async function deployFullSystem(
@@ -136,15 +143,15 @@ export async function deployFullSystem(
     claimDelaySeconds: claimDelay,
     redstoneFeedId: feedId,
     redstoneFeedDecimals: FEED_DECIMALS,
-    maxSampleDistance: 600,
+    maxSampleDistance: options.maxSampleDistance ?? 600,
     futureTolerance: 60,
-    lambda: WAD / 10n,
+    lambda: options.lambda ?? WAD / 10n,
     kDrawdown: WAD,
     enforceAlpha: true,
-    rhoBS: 0,
-    phiLP: WAD,
-    phiBS: 0,
-    phiTR: 0,
+    rhoBS: options.rhoBS ?? 0,
+    phiLP: options.phiLP ?? WAD,
+    phiBS: options.phiBS ?? 0,
+    phiTR: options.phiTR ?? 0,
     withdrawalLagBatches: 1,
     operatorAllowlist: [owner.address],
   };
