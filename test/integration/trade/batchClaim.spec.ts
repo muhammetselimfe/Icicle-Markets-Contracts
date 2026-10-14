@@ -136,7 +136,7 @@ describe("TradeModule batchClaimPayout", () => {
       dynVolBinsWad: 0n,
       dynSigmaMinWad: 0n,
       dynSigmaMaxWad: 0n,
-      dynFloorWad: 0n,
+      dynFloorWad: 0n, dynVersion: 0, tradingHalted: false, haltedAt: 0n,
     };
     await core.setMarket(marketId, market);
     const factors = Array(numBins).fill(WAD);
@@ -194,7 +194,7 @@ describe("TradeModule batchClaimPayout", () => {
       dynVolBinsWad: 0n,
       dynSigmaMinWad: 0n,
       dynSigmaMaxWad: 0n,
-      dynFloorWad: 0n,
+      dynFloorWad: 0n, dynVersion: 0, tradingHalted: false, haltedAt: 0n,
     };
     await core.setMarket(marketId, settledMarket);
     await core.setPayoutReserve(marketId, payoutReserve);
@@ -405,7 +405,7 @@ describe("TradeModule batchClaimPayout", () => {
       dynVolBinsWad: 0n,
       dynSigmaMinWad: 0n,
       dynSigmaMaxWad: 0n,
-      dynFloorWad: 0n,
+      dynFloorWad: 0n, dynVersion: 0, tradingHalted: false, haltedAt: 0n,
     };
     await core.setMarket(1, settledMarket);
 

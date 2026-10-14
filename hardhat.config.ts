@@ -53,6 +53,8 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
+      // test-only: IcicleOptionsCoreHarness (Core + test hooks) is ~24.9 KB after v2.1; production Core is ~17.9 KB
+      allowUnlimitedContractSize: true,
       chainId: 31337,
       accounts: {
         count: Number.isFinite(hardhatAccountCount)

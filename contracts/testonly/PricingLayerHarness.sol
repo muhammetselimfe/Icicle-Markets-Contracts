@@ -13,6 +13,7 @@ pragma solidity 0.8.28;
 
 import {FixedPointMathU} from "../lib/FixedPointMathU.sol";
 import {ClmsrMath} from "../lib/ClmsrMath.sol";
+import {PricingLayer} from "../lib/PricingLayer.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract PricingLayerHarness {
@@ -20,6 +21,11 @@ contract PricingLayerHarness {
 
     uint256 internal constant WAD = 1e18;
     uint256 internal constant MAX_EXP_INPUT_WAD = 133_084258667509499440;
+
+    /// @notice v2.1 tail-mass floor (passthrough to the library for tests).
+    function floorFromTau(uint256 tauWad, uint256 sigmaW, uint32 numBins) public pure returns (uint256) {
+        return PricingLayer.floorFromTau(tauWad, sigmaW, numBins);
+    }
 
     /// @notice Gaussian base factor for one bin (WAD), floored.
     /// @dev exp(-x) computed as WAD / exp(x) since wExp takes only non-negative input.

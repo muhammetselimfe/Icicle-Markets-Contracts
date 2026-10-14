@@ -61,7 +61,10 @@ async function main() {
   const traders = users.slice(0, 4);
   for (const t of traders) { await payment.transfer(t.address, 200_000_000_000n); await payment.connect(t).approve(coreAddr, ethers.MaxUint256); }
 
-  const dp = { w: WAD, volBinsWad: 8n * WAD, sigmaMinWad: wadF(0.75), sigmaMaxWad: 8n * WAD, floorWad: wadF(0.05), perBinCap: 50000n * 1_000_000n, anchorCenterBin: ANCHOR_BIN };
+  // v2.1: σ calibrated to the sim's 600 s market (8 bins is the 24h value and was 12x too wide here);
+  // floorWad is the tail-mass budget τ; cap sized to the 10k vault.
+  const VOL_BINS = 0.045 * Math.sqrt(600 / 86400) * (MIN_TICK + ANCHOR_BIN * SPACING) / SPACING; // ≈ 0.68 bins
+  const dp = { w: WAD, volBinsWad: wadF(VOL_BINS), sigmaMinWad: wadF(0.75), sigmaMaxWad: wadF(Math.max(VOL_BINS, 0.75)), floorWad: wadF(0.03), perBinCap: 300n * 1_000_000n, anchorCenterBin: ANCHOR_BIN };
 
   async function refreshOracle(marketId: bigint, bin: number, atTs: number) {
     const humanPrice = MIN_TICK + bin * SPACING; // feed BTC dec8 -> /100 -> *1e6 ; humanPrice == tick

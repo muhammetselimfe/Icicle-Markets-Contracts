@@ -16,26 +16,27 @@
  */
 import hre from "hardhat";
 import { loadEnvironment } from "../utils/environment";
+const sdk = require("@redstone-finance/sdk");
 
 const WAD = 10n ** 18n;
 const wad = (x: number) => BigInt(Math.round(x * 1e6)) * 10n ** 12n;
 
 // --- Config ---
-const ANCHOR_PRICE = 955;            // $9.55 in cents (set to live price before running)
+// v2.1: the anchor is fetched from the LIVE signed feed at run time (never hard-code a price —
+// a stale anchor mis-centres the market), and volBins is DERIVED from the market duration:
+//   volBins = dailyVol * sqrt(duration / 86400) * priceInTickUnits / tickSpacing
+// (8 bins is only right for a 24h AVAX market; a 15-min market needs ~0.8).
 const TICK_SPACING = 5;              // $0.05/bin
 const NUM_BINS = 80;                 // $7.00–$11.00 span
-const DURATION_SEC = 24 * 60 * 60;
-const START_DELAY_SEC = 10;
-const ALPHA_WAD = "10000000000000000000"; // 10 WAD (maxloss ~ 10*ln80 = 43.8)
-const SEED_CHUNK_SIZE = 50;
-
-// --- Dynamic pricing config ---
+const DURATION_SEC = Number(process.env.DURATION_SEC ?? 24 * 60 * 60);
+const CUTOFF_SEC = Number(process.env.CUTOFF_SEC ?? 900);      // v2.1: trading closes this long before settlement
+const DAILY_VOL = Number(process.env.DAILY_VOL ?? 0.045);      // AVAX ~4.5 %/day; override per asset/regime
+const ALPHA_WAD = ethers.parseEther(process.env.ALPHA ?? "100").toString(); // v2.1: lag-arb loss ∝ α; 50–100 for a ~$120k vault
+const wad = (x: number) => BigInt(Math.round(x * 1e9)) * 10n ** 9n;
 const W = WAD;                       // 1.0 = full oracle anchoring (LP safest; lower to leave trader edge)
-const VOL_BINS = 8n * WAD;           // terminal std ~8 bins (~4.4% daily at $9.55, $0.05 bins)
-const SIGMA_MIN = wad(0.75);         // floor bell width (prevents degenerate spike)
-const SIGMA_MAX = 8n * WAD;          // opening width
-const FLOOR = wad(0.05);             // min base factor
-const PER_BIN_CAP = BigInt(process.env.PER_BIN_CAP_UNITS ?? "50000") * 1_000_000n; // hard tail-loss bound (units, 6-dec). Must be > 0.
+const SIGMA_MIN = wad(0.75);         // floor bell width (non-binding while trading is open with a >=900s cutoff)
+const TAU = wad(Number(process.env.TAU ?? 0.03)); // v2.1: tail-mass budget (3 %); floor derived from σ each trade
+const PER_BIN_CAP = BigInt(process.env.PER_BIN_CAP_UNITS ?? "3600") * 1_000_000n; // v2.1: ≤ 3 % of NAV (checked on-chain when maxPerBinCapBps is set)
 
 async function main() {
   const { ethers } = hre;
@@ -48,6 +49,13 @@ async function main() {
   const core = await ethers.getContractAt("IcicleOptionsCore", coreAddress);
   console.log(`Deployer: ${deployer.address}  Core: ${coreAddress}`);
 
+  const auth = sdk.getSignersForDataServiceId("redstone-primary-prod");
+  const pkgs = await sdk.requestDataPackages({ dataServiceId: "redstone-primary-prod", dataPackagesIds: ["AVAX"], uniqueSignersCount: 1, authorizedSigners: auth });
+  const livePrice = Number(pkgs["AVAX"][0].dataPackage.dataPoints[0].toObj().value);
+  const ANCHOR_PRICE = Math.round(livePrice * 100); // cents
+  const volBins = DAILY_VOL * Math.sqrt(DURATION_SEC / 86400) * ANCHOR_PRICE / TICK_SPACING;
+  const VOL_BINS = wad(volBins), SIGMA_MAX = wad(Math.max(volBins, 0.75));
+  console.log(`Live AVAX $${livePrice.toFixed(4)} -> anchor ${ANCHOR_PRICE}c; duration ${DURATION_SEC}s -> volBins ${volBins.toFixed(2)}`);
   const centerTick = Math.round(ANCHOR_PRICE / TICK_SPACING) * TICK_SPACING;
   const binsBelow = Math.floor(NUM_BINS / 2);
   const minTick = Math.max(TICK_SPACING, centerTick - binsBelow * TICK_SPACING);
@@ -58,8 +66,8 @@ async function main() {
   const block = await ethers.provider.getBlock("latest");
   const now = block?.timestamp ?? Math.floor(Date.now() / 1000);
   const start = now + START_DELAY_SEC;
-  const end = start + DURATION_SEC;
-  const settlement = end;
+  const settlement = start + DURATION_SEC;
+  const end = settlement - CUTOFF_SEC; // v2.1 cutoff
 
   const factors: bigint[] = Array(NUM_BINS).fill(WAD);
   const packed = ethers.solidityPacked(Array(NUM_BINS).fill("uint256"), factors);
@@ -69,7 +77,7 @@ async function main() {
 
   const dp = {
     w: W, volBinsWad: VOL_BINS, sigmaMinWad: SIGMA_MIN, sigmaMaxWad: SIGMA_MAX,
-    floorWad: FLOOR, perBinCap: PER_BIN_CAP, anchorCenterBin,
+    floorWad: TAU, perBinCap: PER_BIN_CAP, anchorCenterBin,
   };
   const baseArgs = [minTick, maxTick, TICK_SPACING, start, end, settlement, NUM_BINS, BigInt(ALPHA_WAD), feePolicyAddress, seedDataAddress] as const;
 

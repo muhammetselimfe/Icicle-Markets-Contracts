@@ -19,6 +19,26 @@ library PricingLayer {
 
     uint256 internal constant WAD = 1e18;
     uint256 internal constant MAX_EXP_INPUT_WAD = 133_084258667509499440;
+    /// @dev sqrt(2*pi) in WAD — a Gaussian bell's mass is ~ sigma*sqrt(2pi) (in bins).
+    uint256 internal constant SQRT_2PI_WAD = 2_506628274631000502;
+    /// @dev Absolute bounds for the derived floor: keeps wExp/wDiv precision sane and the
+    ///      bell meaningful (the floor can never reach the peak).
+    uint256 internal constant FLOOR_ABS_MIN_WAD = 1e12;   // 1e-6
+    uint256 internal constant FLOOR_ABS_MAX_WAD = 5e17;   // 0.5
+    uint256 internal constant TAU_MIN_WAD = 1e15;         // 0.1 % tail mass
+    uint256 internal constant TAU_MAX_WAD = 2e17;         // 20 % tail mass
+
+    /// @notice v2.1 floor as a TAIL-MASS BUDGET: floor_t = τ · σ_t · √(2π) / (numBins − 1).
+    /// @dev A fixed floor lets the (n−1) tail bins outweigh the bell as σ shrinks (at σ=0.75,
+    ///      floor=0.05, n=80 the tails hold ~68 % of the prior mass and the modal bin is priced
+    ///      ~3x too cheap). Deriving the floor from σ keeps the tails at ≈ τ of total mass at
+    ///      every σ, so the modal bin tracks the Gaussian. Clamped to [FLOOR_ABS_MIN, FLOOR_ABS_MAX].
+    function floorFromTau(uint256 tauWad, uint256 sigmaW, uint32 numBins) internal pure returns (uint256 f) {
+        if (numBins <= 1) return FLOOR_ABS_MAX_WAD;
+        f = tauWad.wMul(sigmaW).wMul(SQRT_2PI_WAD) / (uint256(numBins) - 1);
+        if (f < FLOOR_ABS_MIN_WAD) f = FLOOR_ABS_MIN_WAD;
+        if (f > FLOOR_ABS_MAX_WAD) f = FLOOR_ABS_MAX_WAD;
+    }
 
     /// @notice Per-market dynamic pricing config (stored in the Market struct).
     struct Config {

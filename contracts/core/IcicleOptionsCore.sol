@@ -41,6 +41,10 @@ contract IcicleOptionsCore is
     event FeeWaterfallConfigUpdated(uint256 rhoBS, int256 pdd, uint256 phiLP, uint256 phiBS, uint256 phiTR);
     event WithdrawalLagUpdated(uint64 lag);
     event ModulesUpdated(address trade, address lifecycle, address risk, address vault, address oracle);
+    // v2.1
+    event MarketTradingResumed(uint256 indexed marketId, address indexed by);
+    event MarketTradingHalted(uint256 indexed marketId, int256 oldTick, int256 newTick); // emitted via OracleModule delegatecall
+    event DynamicGuardsUpdated(uint64 tradeMaxStaleness, uint64 maxPriceJumpBps, uint64 jumpWindow, uint64 maxPerBinCapBps, uint64 minDynamicCutoff);
 
     // ============================================================
     // Modifiers
@@ -316,6 +320,8 @@ contract IcicleOptionsCore is
         uint128 quantity,
         uint256 maxCost
     ) external override whenNotPaused nonReentrant returns (uint256 positionId) {
+        // v2.1: a RedStone payload appended to the calldata refreshes the trade oracle first
+        _refreshIfPayload(marketId, 4 + 5 * 32);
         // Risk gate first: validate exposure caps before position modification
         _riskGate(abi.encodeCall(
             IRiskModule.gateOpenPosition,
@@ -334,6 +340,7 @@ contract IcicleOptionsCore is
         uint128 quantity,
         uint256 maxCost
     ) external override whenNotPaused nonReentrant {
+        _refreshIfPayloadForPosition(positionId, 4 + 3 * 32);
         // Risk gate first: validate exposure caps before position modification
         _riskGate(abi.encodeCall(
             IRiskModule.gateIncreasePosition,
@@ -351,6 +358,7 @@ contract IcicleOptionsCore is
         uint128 quantity,
         uint256 minProceeds
     ) external override whenNotPaused nonReentrant {
+        _refreshIfPayloadForPosition(positionId, 4 + 3 * 32);
         _delegate(tradeModule, abi.encodeCall(
             IIcicleOptionsCore.decreasePosition,
             (positionId, quantity, minProceeds)
@@ -361,6 +369,7 @@ contract IcicleOptionsCore is
         uint256 positionId,
         uint256 minProceeds
     ) external override whenNotPaused nonReentrant {
+        _refreshIfPayloadForPosition(positionId, 4 + 2 * 32);
         _delegate(tradeModule, abi.encodeCall(
             IIcicleOptionsCore.closePosition,
             (positionId, minProceeds)
@@ -820,6 +829,73 @@ contract IcicleOptionsCore is
     // --- Internal: delegate helpers ---
 
     /// @dev Delegate to a module preserving context, bubble up revert
+    // ============================================================
+    // v2.1 dynamic-pricing guards
+    // ============================================================
+
+    /// @notice Configure the v2.1 trade-path guards. 0 disables the corresponding guard.
+    /// @param _tradeMaxStaleness max age (s) of the cached oracle tick a dynamic trade may use; 0 => maxSampleDistance
+    /// @param _maxPriceJumpBps   jump (bps of price) that trips the per-market breaker; 0 => breaker off
+    /// @param _jumpWindow        the jump must occur within this many seconds of the previous sample
+    /// @param _maxPerBinCapBps   max perBinCap for new dynamic markets, as bps of vault NAV; 0 => unchecked
+    /// @param _minDynamicCutoff  min (settlement - end) for new dynamic markets, seconds
+    function setDynamicGuards(
+        uint64 _tradeMaxStaleness,
+        uint64 _maxPriceJumpBps,
+        uint64 _jumpWindow,
+        uint64 _maxPerBinCapBps,
+        uint64 _minDynamicCutoff
+    ) external onlyOwner {
+        if (_tradeMaxStaleness != 0 && (_tradeMaxStaleness < 5 || _tradeMaxStaleness > maxSampleDistance)) {
+            revert IcicleOptionsErrors.InvalidTradeStaleness(_tradeMaxStaleness);
+        }
+        if ((_maxPriceJumpBps == 0) != (_jumpWindow == 0) || _maxPriceJumpBps > 5_000 || _jumpWindow > 3_600) {
+            revert IcicleOptionsErrors.InvalidJumpConfig(_maxPriceJumpBps, _jumpWindow);
+        }
+        if (_maxPerBinCapBps > 10_000) revert IcicleOptionsErrors.InvalidCapBps(_maxPerBinCapBps);
+        if (_minDynamicCutoff > 86_400) revert IcicleOptionsErrors.InvalidDynamicCutoff(_minDynamicCutoff);
+        tradeMaxStaleness = _tradeMaxStaleness;
+        maxPriceJumpBps = _maxPriceJumpBps;
+        jumpWindow = _jumpWindow;
+        maxPerBinCapBps = _maxPerBinCapBps;
+        minDynamicCutoff = _minDynamicCutoff;
+        emit DynamicGuardsUpdated(_tradeMaxStaleness, _maxPriceJumpBps, _jumpWindow, _maxPerBinCapBps, _minDynamicCutoff);
+    }
+
+    /// @notice Clear a price-jump halt on a market (operator judgement after a genuine move).
+    function resumeTrading(uint256 marketId) external onlyOwnerOrOperator {
+        IIcicleOptionsCore.Market storage m = markets[marketId];
+        if (m.numBins == 0) revert IcicleOptionsErrors.MarketNotFound(marketId);
+        m.tradingHalted = false;
+        m.haltedAt = 0;
+        emit MarketTradingResumed(marketId, msg.sender);
+    }
+
+    /// @dev True when the calldata carries a RedStone payload after the ABI-encoded args
+    ///      (the payload ends with the 9-byte RedStone marker 0x000002ed57011e0000).
+    function _hasRedstonePayload(uint256 baseLen) internal pure returns (bool has) {
+        if (msg.data.length < baseLen + 41) return false; // marker (9) + unsigned-metadata size slot (32)
+        assembly ("memory-safe") {
+            let last := calldataload(sub(calldatasize(), 32))
+            has := eq(and(last, 0x2ed57011e0000), 0x2ed57011e0000)
+        }
+    }
+
+    /// @dev v2.1: if the trade tx carries a RedStone payload, refresh the market's trade oracle
+    ///      first (atomic with the trade), so trades price against a price seconds old instead
+    ///      of the keeper's last refresh. No payload => unchanged behaviour (cached tick + staleness gate).
+    function _refreshIfPayload(uint256 marketId, uint256 baseLen) internal {
+        if (!_hasRedstonePayload(baseLen)) return;
+        if (!markets[marketId].dynamicEnabled) return;
+        bytes memory tail = msg.data[baseLen:];
+        _delegate(oracleModule, bytes.concat(abi.encodeWithSignature("refreshTradeOracle(uint256)", marketId), tail));
+    }
+
+    function _refreshIfPayloadForPosition(uint256 positionId, uint256 baseLen) internal {
+        if (!_hasRedstonePayload(baseLen)) return;
+        _refreshIfPayload(positionContract.getPosition(positionId).marketId, baseLen);
+    }
+
     function _delegate(address module, bytes memory callData) internal returns (bytes memory) {
         if (module == address(0)) revert IcicleOptionsErrors.ModuleNotSet();
         (bool success, bytes memory ret) = module.delegatecall(callData);

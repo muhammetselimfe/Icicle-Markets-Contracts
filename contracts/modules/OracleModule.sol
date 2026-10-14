@@ -69,9 +69,44 @@ contract OracleModule is IcicleOptionsCoreStorage, PrimaryProdDataServiceConsume
 
         int256 settlementValue = _convertPriceToSettlementValue(price);
         int256 tick = _toSettlementTick(market, settlementValue);
+        _applyJumpBreaker(marketId, market, tick, priceTimestamp, nowTs);
         market.cachedOracleTick = tick;
         market.cachedOracleTs = priceTimestamp;
         emit TradeOracleRefreshed(marketId, tick, priceTimestamp);
+    }
+
+    event MarketTradingHalted(uint256 indexed marketId, int256 oldTick, int256 newTick);
+    event MarketTradingResumed(uint256 indexed marketId, address indexed by);
+
+    /// @dev v2.1 price-jump circuit breaker. A move larger than maxPriceJumpBps within
+    ///      jumpWindow seconds halts trading on the market (settlement is unaffected). The
+    ///      cache still updates, so a later sample that agrees with the new level (within
+    ///      bps, at least jumpWindow after the halt) auto-resumes; an operator can also
+    ///      resume via Core.resumeTrading. Halting beats pricing off a disputed level.
+    function _applyJumpBreaker(
+        uint256 marketId,
+        IIcicleOptionsCore.Market storage market,
+        int256 tick,
+        uint64 priceTimestamp,
+        uint64 nowTs
+    ) internal {
+        if (maxPriceJumpBps == 0 || market.cachedOracleTs == 0) return;
+        int256 old = market.cachedOracleTick;
+        if (old <= 0) return;
+        uint256 diff = tick > old ? uint256(tick - old) : uint256(old - tick);
+        bool jump = diff * 10_000 > uint256(old) * maxPriceJumpBps;
+        if (!market.tradingHalted) {
+            uint64 dt = priceTimestamp > market.cachedOracleTs ? priceTimestamp - market.cachedOracleTs : 0;
+            if (jump && dt < jumpWindow) {
+                market.tradingHalted = true;
+                market.haltedAt = nowTs;
+                emit MarketTradingHalted(marketId, old, tick);
+            }
+        } else if (!jump && nowTs >= market.haltedAt + jumpWindow) {
+            market.tradingHalted = false;
+            market.haltedAt = 0;
+            emit MarketTradingResumed(marketId, address(0));
+        }
     }
 
     event OracleConfigUpdated(

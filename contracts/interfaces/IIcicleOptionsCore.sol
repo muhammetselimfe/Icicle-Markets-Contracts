@@ -62,7 +62,12 @@ interface IIcicleOptionsCore {
         uint256 dynVolBinsWad;      // terminal-price std in bins, WAD
         uint256 dynSigmaMinWad;     // min bell width, WAD
         uint256 dynSigmaMaxWad;     // max bell width, WAD
-        uint256 dynFloorWad;        // min base factor, WAD
+        uint256 dynFloorWad;        // v2: fixed min base factor (WAD). v2.1 (dynVersion>=2): tail-mass budget τ (WAD)
+
+        // ---- v2.1 (appended) ----
+        uint8 dynVersion;           // 0 = v2 fixed-floor semantics; 2 = v2.1 tail-mass floor + settlement-horizon σ
+        bool tradingHalted;         // price-jump circuit breaker tripped; trades revert until resumed
+        uint64 haltedAt;            // timestamp the breaker tripped (auto-resume window reference)
     }
 
     // v2 dynamic-market creation params (grouped to keep the signature flat)
@@ -71,7 +76,7 @@ interface IIcicleOptionsCore {
         uint256 volBinsWad;   // terminal-price std in bins, WAD
         uint256 sigmaMinWad;  // min bell width, WAD
         uint256 sigmaMaxWad;  // max bell width, WAD
-        uint256 floorWad;     // min base factor, WAD
+        uint256 floorWad;     // v2.1: tail-mass budget τ (WAD, [0.1%, 20%]); the per-bin floor is derived from σ_t each trade
         uint128 perBinCap;    // max payout (6-dec qty) per bin; 0 = no cap
         uint32 anchorCenterBin; // creation-time center bin (used when w < 1)
     }

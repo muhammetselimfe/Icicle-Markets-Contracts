@@ -111,7 +111,7 @@ async function deploySystem(
     dynVolBinsWad: 0n,
     dynSigmaMinWad: 0n,
     dynSigmaMaxWad: 0n,
-    dynFloorWad: 0n,
+    dynFloorWad: 0n, dynVersion: 0, tradingHalted: false, haltedAt: 0n,
     ...marketOverrides,
   };
   await core.setMarket(1, market);

@@ -128,7 +128,7 @@ describe("Boundaries", () => {
       dynVolBinsWad: 0n,
       dynSigmaMinWad: 0n,
       dynSigmaMaxWad: 0n,
-      dynFloorWad: 0n,
+      dynFloorWad: 0n, dynVersion: 0, tradingHalted: false, haltedAt: 0n,
     };
     await core.setMarket(MARKET_ID, market);
 
@@ -439,7 +439,7 @@ describe("Boundaries", () => {
         dynVolBinsWad: 0n,
         dynSigmaMinWad: 0n,
         dynSigmaMaxWad: 0n,
-        dynFloorWad: 0n,
+        dynFloorWad: 0n, dynVersion: 0, tradingHalted: false, haltedAt: 0n,
       };
       await core.setMarket(2, market);
       await core.seedTree(2, Array(10).fill(WAD));
@@ -497,7 +497,7 @@ describe("Boundaries", () => {
         dynVolBinsWad: 0n,
         dynSigmaMinWad: 0n,
         dynSigmaMaxWad: 0n,
-        dynFloorWad: 0n,
+        dynFloorWad: 0n, dynVersion: 0, tradingHalted: false, haltedAt: 0n,
       };
       await core.setMarket(3, market);
       await core.seedTree(3, Array(10).fill(WAD));
@@ -555,7 +555,7 @@ describe("Boundaries", () => {
         dynVolBinsWad: 0n,
         dynSigmaMinWad: 0n,
         dynSigmaMaxWad: 0n,
-        dynFloorWad: 0n,
+        dynFloorWad: 0n, dynVersion: 0, tradingHalted: false, haltedAt: 0n,
       };
       await core.setMarket(4, market);
       await core.seedTree(4, Array(10).fill(WAD));
@@ -664,7 +664,7 @@ describe("Boundaries", () => {
         dynVolBinsWad: 0n,
         dynSigmaMinWad: 0n,
         dynSigmaMaxWad: 0n,
-        dynFloorWad: 0n,
+        dynFloorWad: 0n, dynVersion: 0, tradingHalted: false, haltedAt: 0n,
       };
       await core.setMarket(5, market);
       await core.seedTree(5, Array(10).fill(WAD));
@@ -722,7 +722,7 @@ describe("Boundaries", () => {
         dynVolBinsWad: 0n,
         dynSigmaMinWad: 0n,
         dynSigmaMaxWad: 0n,
-        dynFloorWad: 0n,
+        dynFloorWad: 0n, dynVersion: 0, tradingHalted: false, haltedAt: 0n,
       };
       await core.setMarket(6, market);
       await core.seedTree(6, Array(10).fill(WAD));

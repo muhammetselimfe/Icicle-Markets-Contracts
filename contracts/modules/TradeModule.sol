@@ -363,10 +363,10 @@ contract TradeModule is IcicleOptionsCoreStorage {
         );
         LazyMulSegmentTree.Tree storage tree = marketTrees[marketId];
         if (market.dynamicEnabled) {
-            (uint256 center, uint256 sigma) = _dynBell(market);
+            (uint256 center, uint256 sigma, uint256 floorW) = _dynBell(market);
             costWad = PricingLayer.quoteBuyView(
                 tree, market.numBins, loBin, hiBin, quantityWad,
-                market.liquidityParameter, center, sigma, market.dynFloorWad
+                market.liquidityParameter, center, sigma, floorW
             );
         } else {
             costWad = tree.calculateTradeCost(market.liquidityParameter, loBin, hiBin, quantityWad);
@@ -386,10 +386,10 @@ contract TradeModule is IcicleOptionsCoreStorage {
         );
         LazyMulSegmentTree.Tree storage tree = marketTrees[marketId];
         if (market.dynamicEnabled) {
-            (uint256 center, uint256 sigma) = _dynBell(market);
+            (uint256 center, uint256 sigma, uint256 floorW) = _dynBell(market);
             proceedsWad = PricingLayer.quoteSellView(
                 tree, market.numBins, loBin, hiBin, quantityWad,
-                market.liquidityParameter, center, sigma, market.dynFloorWad
+                market.liquidityParameter, center, sigma, floorW
             );
         } else {
             proceedsWad = tree.calculateSellProceeds(market.liquidityParameter, loBin, hiBin, quantityWad);
@@ -476,7 +476,9 @@ contract TradeModule is IcicleOptionsCoreStorage {
     ///      recent refresh). Bounds adverse selection: a trade can never price against
     ///      a bell older than maxSampleDistance. Pausing trading on a stale oracle is
     ///      strictly safer than pricing off a stale price.
-    function _requireFreshOracle(IIcicleOptionsCore.Market storage market) internal view {
+    function _requireFreshOracle(uint256 marketId, IIcicleOptionsCore.Market storage market) internal view {
+        // v2.1: price-jump circuit breaker (see OracleModule._applyJumpBreaker)
+        if (market.tradingHalted) revert SE.TradingHalted(marketId);
         uint256 ts = uint256(market.cachedOracleTs);
         // ts == 0 => no genuine oracle refresh has happened (creation only seeds the
         // display anchor). Block trading until refreshTradeOracle posts a real price,
@@ -486,16 +488,22 @@ contract TradeModule is IcicleOptionsCoreStorage {
         // Unconditional: maxSampleDistance is enforced > 0 at config (initialize /
         // setRedstoneConfig), so there is no "disabled" path. Fail-safe — if it were ever
         // 0, this reverts (halts trading) rather than silently disabling freshness.
-        if (age > maxSampleDistance) {
-            revert SE.OracleStaleForTrade(age, maxSampleDistance);
+        // v2.1: a dedicated (tighter) trade-staleness limit; 0 falls back to the settlement
+        // tolerance for backwards compatibility.
+        uint256 limit = tradeMaxStaleness != 0 ? tradeMaxStaleness : maxSampleDistance;
+        if (age > limit) {
+            revert SE.OracleStaleForTrade(age, limit);
         }
     }
 
-    /// @dev Effective bell center & sigma for the current oracle tick + time.
+    /// @dev Effective bell center, sigma and floor for the current oracle tick + time.
+    ///      v2.1 (dynVersion >= 2): σ is measured to SETTLEMENT (not endTimestamp) so an early
+    ///      trading cutoff does not collapse the bell, and the floor is derived from σ as a
+    ///      tail-mass budget. Legacy v2 markets keep their fixed floor / end-horizon semantics.
     function _dynBell(IIcicleOptionsCore.Market storage market)
         internal
         view
-        returns (uint256 center, uint256 sigma)
+        returns (uint256 center, uint256 sigma, uint256 floorW)
     {
         uint32 oBin = PricingLayer.oracleBin(
             market.cachedOracleTick, market.minTick, market.tickSpacing, market.numBins
@@ -508,7 +516,10 @@ contract TradeModule is IcicleOptionsCoreStorage {
             sigmaMaxWad: market.dynSigmaMaxWad,
             floorWad: market.dynFloorWad
         });
-        sigma = PricingLayer.sigmaWad(cfg, uint64(block.timestamp), market.startTimestamp, market.endTimestamp);
+        bool v21 = market.dynVersion >= 2;
+        uint64 horizon = v21 ? market.settlementTimestamp : market.endTimestamp;
+        sigma = PricingLayer.sigmaWad(cfg, uint64(block.timestamp), market.startTimestamp, horizon);
+        floorW = v21 ? PricingLayer.floorFromTau(market.dynFloorWad, sigma, market.numBins) : market.dynFloorWad;
     }
 
     /// @dev Apply the buy factor and return cost. Dynamic markets price against the
@@ -524,12 +535,12 @@ contract TradeModule is IcicleOptionsCoreStorage {
         uint256 qtyWad
     ) internal returns (uint256 costWad) {
         if (market.dynamicEnabled) {
-            _requireFreshOracle(market);
-            (uint256 center, uint256 sigma) = _dynBell(market);
+            _requireFreshOracle(marketId, market);
+            (uint256 center, uint256 sigma, uint256 floorW) = _dynBell(market);
             LazyMulSegmentTree.Tree storage tree = marketTrees[marketId];
-            uint256 zBefore = PricingLayer.computeZeff(tree, market.numBins, center, sigma, market.dynFloorWad);
+            uint256 zBefore = PricingLayer.computeZeff(tree, market.numBins, center, sigma, floorW);
             _applyFactorChunkedByBins(marketId, loBin, hiBin, lowerTick, upperTick, qtyWad, true);
-            uint256 zAfter = PricingLayer.computeZeff(tree, market.numBins, center, sigma, market.dynFloorWad);
+            uint256 zAfter = PricingLayer.computeZeff(tree, market.numBins, center, sigma, floorW);
             costWad = ClmsrMath.computeBuyCostFromSumChange(market.liquidityParameter, zBefore, zAfter);
         } else {
             (uint256 sumBefore, uint256 sumAfter) = _applyFactorChunkedByBins(
@@ -550,12 +561,12 @@ contract TradeModule is IcicleOptionsCoreStorage {
         uint256 qtyWad
     ) internal returns (uint256 proceedsWad) {
         if (market.dynamicEnabled) {
-            _requireFreshOracle(market);
-            (uint256 center, uint256 sigma) = _dynBell(market);
+            _requireFreshOracle(marketId, market);
+            (uint256 center, uint256 sigma, uint256 floorW) = _dynBell(market);
             LazyMulSegmentTree.Tree storage tree = marketTrees[marketId];
-            uint256 zBefore = PricingLayer.computeZeff(tree, market.numBins, center, sigma, market.dynFloorWad);
+            uint256 zBefore = PricingLayer.computeZeff(tree, market.numBins, center, sigma, floorW);
             _applyFactorChunkedByBins(marketId, loBin, hiBin, lowerTick, upperTick, qtyWad, false);
-            uint256 zAfter = PricingLayer.computeZeff(tree, market.numBins, center, sigma, market.dynFloorWad);
+            uint256 zAfter = PricingLayer.computeZeff(tree, market.numBins, center, sigma, floorW);
             proceedsWad = ClmsrMath.computeSellProceedsFromSumChange(market.liquidityParameter, zBefore, zAfter);
         } else {
             (uint256 sumBefore, uint256 sumAfter) = _applyFactorChunkedByBins(

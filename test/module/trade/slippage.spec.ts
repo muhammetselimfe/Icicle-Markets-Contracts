@@ -92,7 +92,7 @@ describe("TradeModule slippage and bounds", () => {
       dynVolBinsWad: 0n,
       dynSigmaMinWad: 0n,
       dynSigmaMaxWad: 0n,
-      dynFloorWad: 0n,
+      dynFloorWad: 0n, dynVersion: 0, tradingHalted: false, haltedAt: 0n,
     };
     await core.setMarket(1, settledMarket);
     

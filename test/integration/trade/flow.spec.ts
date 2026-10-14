@@ -115,7 +115,7 @@ describe("TradeModule flow (minimal parity)", () => {
       dynVolBinsWad: 0n,
       dynSigmaMinWad: 0n,
       dynSigmaMaxWad: 0n,
-      dynFloorWad: 0n,
+      dynFloorWad: 0n, dynVersion: 0, tradingHalted: false, haltedAt: 0n,
       ...marketOverrides,
     };
     await core.setMarket(1, market);
@@ -233,7 +233,7 @@ describe("TradeModule flow (minimal parity)", () => {
       dynVolBinsWad: 0n,
       dynSigmaMinWad: 0n,
       dynSigmaMaxWad: 0n,
-      dynFloorWad: 0n,
+      dynFloorWad: 0n, dynVersion: 0, tradingHalted: false, haltedAt: 0n,
     };
     await core.setMarket(1, settledMarket);
 
@@ -296,7 +296,7 @@ describe("TradeModule flow (minimal parity)", () => {
       dynVolBinsWad: 0n,
       dynSigmaMinWad: 0n,
       dynSigmaMaxWad: 0n,
-      dynFloorWad: 0n,
+      dynFloorWad: 0n, dynVersion: 0, tradingHalted: false, haltedAt: 0n,
     };
     await core.setMarket(1, earlySettleMarket);
     await expect(core.connect(user).claimPayout(1)).to.be.reverted;
@@ -341,7 +341,7 @@ describe("TradeModule flow (minimal parity)", () => {
       dynVolBinsWad: 0n,
       dynSigmaMinWad: 0n,
       dynSigmaMaxWad: 0n,
-      dynFloorWad: 0n,
+      dynFloorWad: 0n, dynVersion: 0, tradingHalted: false, haltedAt: 0n,
     };
     await core.setMarket(1, claimableMarket);
     await core.connect(user).claimPayout(1);
@@ -392,7 +392,7 @@ describe("TradeModule flow (minimal parity)", () => {
       dynVolBinsWad: 0n,
       dynSigmaMinWad: 0n,
       dynSigmaMaxWad: 0n,
-      dynFloorWad: 0n,
+      dynFloorWad: 0n, dynVersion: 0, tradingHalted: false, haltedAt: 0n,
     };
     await core.setMarket(1, feeMarket);
     await expect(

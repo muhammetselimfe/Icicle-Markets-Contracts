@@ -129,7 +129,7 @@ describe("CLMSR Invariants", () => {
       dynVolBinsWad: 0n,
       dynSigmaMinWad: 0n,
       dynSigmaMaxWad: 0n,
-      dynFloorWad: 0n,
+      dynFloorWad: 0n, dynVersion: 0, tradingHalted: false, haltedAt: 0n,
     };
     await core.setMarket(MARKET_ID, market);
 
@@ -620,7 +620,7 @@ describe("CLMSR Invariants", () => {
         dynVolBinsWad: 0n,
         dynSigmaMinWad: 0n,
         dynSigmaMaxWad: 0n,
-        dynFloorWad: 0n,
+        dynFloorWad: 0n, dynVersion: 0, tradingHalted: false, haltedAt: 0n,
       };
       await core.setMarket(2, market2);
       await core.seedTree(2, Array(NUM_BINS).fill(WAD));

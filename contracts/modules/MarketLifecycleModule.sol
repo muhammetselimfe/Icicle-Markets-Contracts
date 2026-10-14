@@ -8,6 +8,7 @@ import "../lib/FixedPointMathU.sol";
 import "../lib/ExposureDiffLib.sol";
 import "../lib/TickBinLib.sol";
 import "../lib/SeedDataLib.sol";
+import "../lib/PricingLayer.sol";
 
 /// @notice Delegate-only lifecycle module (skeleton)
 contract MarketLifecycleModule is IcicleOptionsCoreStorage {
@@ -123,10 +124,20 @@ contract MarketLifecycleModule is IcicleOptionsCoreStorage {
         if (dp.w > WAD) revert SE.InvalidDynamicParams();
         if (dp.volBinsWad == 0) revert SE.InvalidDynamicParams();
         if (dp.sigmaMinWad == 0 || dp.sigmaMinWad > dp.sigmaMaxWad) revert SE.InvalidDynamicParams();
-        // floorWad must be in [MIN_FACTOR, WAD). == WAD floors every bin to the peak,
-        // collapsing the bell to uniform (static-like) pricing and silently defeating the
-        // oracle-anchored prior.
-        if (dp.floorWad < LazyMulSegmentTree.MIN_FACTOR || dp.floorWad >= WAD) revert SE.InvalidDynamicParams();
+        // v2.1: floorWad is the TAIL-MASS BUDGET τ (PricingLayer.floorFromTau derives the
+        // per-bin floor from σ_t each trade). Base factors never enter the segment tree, so
+        // the tree's MIN_FACTOR does not apply here. Bounded to [0.1 %, 20 %] of prior mass.
+        if (dp.floorWad < PricingLayer.TAU_MIN_WAD || dp.floorWad > PricingLayer.TAU_MAX_WAD) revert SE.InvalidDynamicParams();
+        // v2.1: trading must close early enough before settlement that σ_t never collapses
+        // inside the tradable window (the last minutes are where the pin/lag edge lives).
+        if (settlementTimestamp - endTimestamp < minDynamicCutoff) {
+            revert SE.DynamicCutoffTooShort(settlementTimestamp - endTimestamp, minDynamicCutoff);
+        }
+        // v2.1: perBinCap is the only loss bound on a dynamic market; size it against NAV.
+        if (maxPerBinCapBps != 0) {
+            uint256 maxCapWad = lpVault.nav * maxPerBinCapBps / 10_000;      // NAV is WAD
+            if (uint256(dp.perBinCap) * 1e12 > maxCapWad) revert SE.PerBinCapTooLarge(dp.perBinCap, maxCapWad / 1e12);
+        }
         // perBinCap is the ONLY hard ceiling on a dynamic market's settlement payout; 0
         // disables it (_requireExposureWithinCap no-ops), leaving the whole vault exposed.
         // Require a real cap so per-market loss is bounded by construction.
@@ -144,6 +155,7 @@ contract MarketLifecycleModule is IcicleOptionsCoreStorage {
         m.dynSigmaMaxWad = dp.sigmaMaxWad;
         m.dynFloorWad = dp.floorWad;
         m.perBinCap = dp.perBinCap;
+        m.dynVersion = 2; // v2.1 semantics: tail-mass floor, σ to settlement, breaker-aware
         // Seed the anchor tick only as a display/fallback value. cachedOracleTs is left at
         // 0 (NOT startTimestamp): the freshness gate treats ts==0 as "no genuine oracle yet"
         // and blocks trading until the keeper posts a real price via refreshTradeOracle.

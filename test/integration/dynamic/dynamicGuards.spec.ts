@@ -81,14 +81,17 @@ describe("v2 dynamic guards (hardening regression)", () => {
     await expect(tryCreate(core, feeAddr, { ...DP, volBinsWad: 0n }))
       .to.be.revertedWithCustomError(core, "InvalidDynamicParams");
   });
-  it("rejects floor below tree MIN_FACTOR or >= WAD (>= WAD = degenerate uniform bell)", async () => {
+  it("v2.1: floorWad is a tail-mass budget τ in [0.1%, 20%] (outside => InvalidDynamicParams)", async () => {
     const { core, feeAddr } = await setup();
-    await expect(tryCreate(core, feeAddr, { ...DP, floorWad: MIN_FACTOR - 1n }))
+    const TAU_MIN = 10n ** 15n, TAU_MAX = 2n * 10n ** 17n;
+    await expect(tryCreate(core, feeAddr, { ...DP, floorWad: TAU_MIN - 1n }))
       .to.be.revertedWithCustomError(core, "InvalidDynamicParams");
-    await expect(tryCreate(core, feeAddr, { ...DP, floorWad: WAD })) // == WAD collapses the bell to uniform
+    await expect(tryCreate(core, feeAddr, { ...DP, floorWad: TAU_MAX + 1n }))
       .to.be.revertedWithCustomError(core, "InvalidDynamicParams");
-    await expect(tryCreate(core, feeAddr, { ...DP, floorWad: WAD + 1n }))
+    await expect(tryCreate(core, feeAddr, { ...DP, floorWad: WAD })) // 100% tail mass = no bell
       .to.be.revertedWithCustomError(core, "InvalidDynamicParams");
+    await expect(tryCreate(core, feeAddr, { ...DP, floorWad: TAU_MIN })).to.not.be.reverted;
+    await expect(tryCreate(core, feeAddr, { ...DP, floorWad: TAU_MAX })).to.not.be.reverted;
   });
   it("rejects an out-of-range anchorCenterBin (no silent clamp)", async () => {
     const { core, feeAddr } = await setup();
@@ -115,7 +118,7 @@ describe("v2 dynamic guards (hardening regression)", () => {
     await expect(tryCreate(core, feeAddr, { ...DP, perBinCap: 0n }))
       .to.be.revertedWithCustomError(core, "InvalidDynamicParams");
   });
-  it("accepts valid params (boundary: floor == MIN_FACTOR, w == WAD)", async () => {
+  it("accepts valid params (boundary: τ == TAU_MIN, w == WAD)", async () => {
     const { core, feeAddr } = await setup();
     await expect(tryCreate(core, feeAddr, { ...DP, w: WAD, floorWad: MIN_FACTOR })).to.not.be.reverted;
   });

@@ -106,7 +106,7 @@ describe("Rounding Invariants", () => {
       dynVolBinsWad: 0n,
       dynSigmaMinWad: 0n,
       dynSigmaMaxWad: 0n,
-      dynFloorWad: 0n,
+      dynFloorWad: 0n, dynVersion: 0, tradingHalted: false, haltedAt: 0n,
     };
     await core.setMarket(MARKET_ID, market);
     await core.seedTree(MARKET_ID, Array(NUM_BINS).fill(WAD));

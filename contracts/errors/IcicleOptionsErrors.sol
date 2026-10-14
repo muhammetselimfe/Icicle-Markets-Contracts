@@ -34,6 +34,14 @@ interface IcicleOptionsErrors {
     error InvalidMaxSampleDistance(uint64 value);
     error BatchSecondsOutOfRange(uint64 value);
     error BatchPeriodLocked();
+    // v2.1 dynamic-pricing hardening
+    error TradingHalted(uint256 marketId);
+    error PerBinCapTooLarge(uint128 cap, uint256 maxCap);
+    error DynamicCutoffTooShort(uint64 cutoff, uint64 minCutoff);
+    error InvalidTradeStaleness(uint64 value);
+    error InvalidJumpConfig(uint64 bps, uint64 window);
+    error InvalidCapBps(uint64 bps);
+    error InvalidDynamicCutoff(uint64 value);
     error SeedDataLengthMismatch(uint256 providedBytes, uint256 expectedBytes);
     error SeedAlreadyComplete(uint256 marketId);
 

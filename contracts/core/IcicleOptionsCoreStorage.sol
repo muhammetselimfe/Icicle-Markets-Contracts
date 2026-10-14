@@ -321,6 +321,21 @@ abstract contract IcicleOptionsCoreStorage {
     ///      Appended here (not at the top) so the layout stays append-only / upgrade-safe.
     uint64 public batchSeconds;
 
+    // ---- v2.1 dynamic-pricing guards (appended; 0 = disabled / legacy behaviour) ----
+    /// @dev Max age of the cached oracle tick a dynamic TRADE may price against (seconds).
+    ///      0 => falls back to maxSampleDistance (settlement tolerance). Packs with batchSeconds.
+    uint64 public tradeMaxStaleness;
+    /// @dev Price-jump circuit breaker: |Δtick|/tick > maxPriceJumpBps within jumpWindow seconds
+    ///      halts trading on that market until a confirming sample or operator resume. 0 => off.
+    uint64 public maxPriceJumpBps;
+    uint64 public jumpWindow;
+    /// @dev Max perBinCap for a new dynamic market as bps of vault NAV. 0 => no on-chain check.
+    uint64 public maxPerBinCapBps;
+    /// @dev Dynamic markets must close trading at least this long before settlement (seconds).
+    uint64 public minDynamicCutoff;
+
     // Reserve ample slots for future upgrades; do not change after first deployment.
-    uint256[11] internal __gap;
+    // (v2.1: batchSeconds + 3 x uint64 pack into the existing slot; maxPerBinCapBps +
+    //  minDynamicCutoff take one new slot => gap 11 -> 10, total layout size unchanged)
+    uint256[10] internal __gap;
 }
