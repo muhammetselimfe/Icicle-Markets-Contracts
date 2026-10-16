@@ -172,6 +172,24 @@ describe("v2.1 dynamic-pricing fixes", () => {
     await expect(createDynamic(core, feeAddr, { dp: { ...DP, perBinCap: 300_000_000n } })).to.not.be.reverted;
   });
 
+  it("F4b: perBinCap is bounded by k·α when maxCapPerAlpha is set", async () => {
+    const { core, feeAddr, users } = await setup();
+    // disabled by default: a cap of 1,000,000 units on α = 10 is accepted (legacy behaviour)
+    await expect(createDynamic(core, feeAddr)).to.not.be.reverted;
+    await expect(core.connect(users[0]).setMaxCapPerAlpha(4)).to.be.reverted; // onlyOwner
+    await expect(core.setMaxCapPerAlpha(101)).to.be.revertedWithCustomError(core, "InvalidCapPerAlpha");
+    await expect(core.setMaxCapPerAlpha(4)).to.emit(core, "MaxCapPerAlphaUpdated").withArgs(4);
+    // α = 10 → at most 40 payout units per bin
+    await expect(createDynamic(core, feeAddr, { dp: { ...DP, perBinCap: 41_000_000n } }))
+      .to.be.revertedWithCustomError(core, "PerBinCapTooLarge").withArgs(41_000_000n, 40_000_000n);
+    await expect(createDynamic(core, feeAddr, { dp: { ...DP, perBinCap: 40_000_000n } })).to.not.be.reverted;
+    // both guards set: the tighter one decides (NAV allows 300 units, α allows 40)
+    await core.setDynamicGuards(0, 0, 0, 300, 0);
+    await expect(createDynamic(core, feeAddr, { dp: { ...DP, perBinCap: 100_000_000n } })).to.be.revertedWithCustomError(core, "PerBinCapTooLarge");
+    await core.setMaxCapPerAlpha(0); // off again → only the NAV cap applies
+    await expect(createDynamic(core, feeAddr, { dp: { ...DP, perBinCap: 100_000_000n } })).to.not.be.reverted;
+  });
+
   it("guards: setDynamicGuards validates its inputs", async () => {
     const { core } = await setup();
     await expect(core.setDynamicGuards(3, 0, 0, 0, 0)).to.be.revertedWithCustomError(core, "InvalidTradeStaleness");

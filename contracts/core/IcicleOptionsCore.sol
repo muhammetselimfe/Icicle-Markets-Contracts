@@ -45,6 +45,7 @@ contract IcicleOptionsCore is
     event MarketTradingResumed(uint256 indexed marketId, address indexed by);
     event MarketTradingHalted(uint256 indexed marketId, int256 oldTick, int256 newTick); // emitted via OracleModule delegatecall
     event DynamicGuardsUpdated(uint64 tradeMaxStaleness, uint64 maxPriceJumpBps, uint64 jumpWindow, uint64 maxPerBinCapBps, uint64 minDynamicCutoff);
+    event MaxCapPerAlphaUpdated(uint64 maxCapPerAlpha);
 
     // ============================================================
     // Modifiers
@@ -860,6 +861,16 @@ contract IcicleOptionsCore is
         maxPerBinCapBps = _maxPerBinCapBps;
         minDynamicCutoff = _minDynamicCutoff;
         emit DynamicGuardsUpdated(_tradeMaxStaleness, _maxPriceJumpBps, _jumpWindow, _maxPerBinCapBps, _minDynamicCutoff);
+    }
+
+    /// @notice F4b: bound a new dynamic market's perBinCap to `k · α` (units per α-dollar).
+    /// @dev The NAV cap bounds the payout; this bounds the price distortion a single capped
+    ///      stack can cause (per-bin weight e^{cap/α}). k ≈ 4 keeps that weight ≤ ~55×.
+    ///      0 disables the check. Capped at 100 so a typo cannot silently disable it.
+    function setMaxCapPerAlpha(uint64 k) external onlyOwner {
+        if (k > 100) revert IcicleOptionsErrors.InvalidCapPerAlpha(k);
+        maxCapPerAlpha = k;
+        emit MaxCapPerAlphaUpdated(k);
     }
 
     /// @notice Clear a price-jump halt on a market (operator judgement after a genuine move).

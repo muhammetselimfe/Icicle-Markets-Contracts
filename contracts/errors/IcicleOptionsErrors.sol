@@ -42,6 +42,7 @@ interface IcicleOptionsErrors {
     error InvalidJumpConfig(uint64 bps, uint64 window);
     error InvalidCapBps(uint64 bps);
     error InvalidDynamicCutoff(uint64 value);
+    error InvalidCapPerAlpha(uint64 value);
     error SeedDataLengthMismatch(uint256 providedBytes, uint256 expectedBytes);
     error SeedAlreadyComplete(uint256 marketId);
 

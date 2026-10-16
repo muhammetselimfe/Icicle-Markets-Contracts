@@ -31,12 +31,19 @@ const NUM_BINS = 80;                 // $7.00–$11.00 span
 const DURATION_SEC = Number(process.env.DURATION_SEC ?? 24 * 60 * 60);
 const CUTOFF_SEC = Number(process.env.CUTOFF_SEC ?? 900);      // v2.1: trading closes this long before settlement
 const DAILY_VOL = Number(process.env.DAILY_VOL ?? 0.045);      // AVAX ~4.5 %/day; override per asset/regime
-const ALPHA_WAD = ethers.parseEther(process.env.ALPHA ?? "100").toString(); // v2.1: lag-arb loss ∝ α; 50–100 for a ~$120k vault
+// v2.1 F4b: α must carry the cap — a stack of `cap` units multiplies one bin's weight by
+// e^{cap/α}; past ~4·α that bin saturates and every other bin quotes ~0 (Fuji #15/#16: α=100,
+// cap=3,500 → 2,530 units for $9.90). Default α = cap/4 (3,600 u → 900); the chain enforces
+// cap ≤ maxCapPerAlpha·α when the owner has set that guard. Lag-arb loss ∝ α is bounded by
+// the trade-staleness gate + payload-attached trades, not by a small α.
+const CAP_PER_ALPHA = Number(process.env.CAP_PER_ALPHA ?? 4);
+const PER_BIN_CAP_UNITS = Number(process.env.PER_BIN_CAP_UNITS ?? "3600");
+const ALPHA_WAD = ethers.parseEther(process.env.ALPHA ?? String(PER_BIN_CAP_UNITS / CAP_PER_ALPHA)).toString();
 const wad = (x: number) => BigInt(Math.round(x * 1e9)) * 10n ** 9n;
 const W = WAD;                       // 1.0 = full oracle anchoring (LP safest; lower to leave trader edge)
 const SIGMA_MIN = wad(0.75);         // floor bell width (non-binding while trading is open with a >=900s cutoff)
 const TAU = wad(Number(process.env.TAU ?? 0.03)); // v2.1: tail-mass budget (3 %); floor derived from σ each trade
-const PER_BIN_CAP = BigInt(process.env.PER_BIN_CAP_UNITS ?? "3600") * 1_000_000n; // v2.1: ≤ 3 % of NAV (checked on-chain when maxPerBinCapBps is set)
+const PER_BIN_CAP = BigInt(PER_BIN_CAP_UNITS) * 1_000_000n; // v2.1: ≤ 3 % of NAV and ≤ CAP_PER_ALPHA·α (both checked on-chain when the guards are set)
 
 async function main() {
   const { ethers } = hre;
@@ -81,6 +88,11 @@ async function main() {
   };
   const baseArgs = [minTick, maxTick, TICK_SPACING, start, end, settlement, NUM_BINS, BigInt(ALPHA_WAD), feePolicyAddress, seedDataAddress] as const;
 
+  // F4b preflight: fail with a readable message before the on-chain PerBinCapTooLarge revert.
+  const capPerAlpha = PER_BIN_CAP_UNITS / (Number(ALPHA_WAD) / 1e18);
+  if (capPerAlpha > CAP_PER_ALPHA) {
+    throw new Error(`perBinCap/α = ${capPerAlpha.toFixed(1)} exceeds ${CAP_PER_ALPHA}: raise ALPHA to ≥ ${Math.ceil(PER_BIN_CAP_UNITS / CAP_PER_ALPHA)} or lower PER_BIN_CAP_UNITS to ≤ ${Math.floor(CAP_PER_ALPHA * Number(ALPHA_WAD) / 1e18)}`);
+  }
   const marketId = await core.createMarketDynamic.staticCall(...baseArgs, dp);
   console.log(`Static OK — would create dynamic marketId=${marketId}`);
 

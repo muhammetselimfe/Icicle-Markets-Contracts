@@ -138,6 +138,16 @@ contract MarketLifecycleModule is IcicleOptionsCoreStorage {
             uint256 maxCapWad = lpVault.nav * maxPerBinCapBps / 10_000;      // NAV is WAD
             if (uint256(dp.perBinCap) * 1e12 > maxCapWad) revert SE.PerBinCapTooLarge(dp.perBinCap, maxCapWad / 1e12);
         }
+        // v2.1 F4b: the cap must also fit the price curve. A stack of `cap` units in one bin
+        // multiplies that bin's weight by e^{cap/α}; past ~4·α the bin saturates and every
+        // other bin quotes ~0 for the rest of the market (Fuji #15/#16: α=100, cap=3,500 →
+        // 2,530 units for $9.90). liquidityParameter is already stored by _createMarketCore.
+        if (maxCapPerAlpha != 0) {
+            uint256 maxCapByAlphaWad = markets[marketId].liquidityParameter * maxCapPerAlpha; // α is WAD
+            if (uint256(dp.perBinCap) * 1e12 > maxCapByAlphaWad) {
+                revert SE.PerBinCapTooLarge(dp.perBinCap, maxCapByAlphaWad / 1e12);
+            }
+        }
         // perBinCap is the ONLY hard ceiling on a dynamic market's settlement payout; 0
         // disables it (_requireExposureWithinCap no-ops), leaving the whole vault exposed.
         // Require a real cap so per-market loss is bounded by construction.

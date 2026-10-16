@@ -333,9 +333,15 @@ abstract contract IcicleOptionsCoreStorage {
     uint64 public maxPerBinCapBps;
     /// @dev Dynamic markets must close trading at least this long before settlement (seconds).
     uint64 public minDynamicCutoff;
+    /// @dev F4b: max perBinCap for a new dynamic market as a multiple of α (payout units per
+    ///      α-dollar). Beyond ~4·α one capped stack saturates its bin (weight e^{cap/α}) and
+    ///      quotes every other bin at ~0, so the NAV cap alone does not protect the book.
+    ///      0 => no on-chain check. Packs with maxPerBinCapBps + minDynamicCutoff.
+    uint64 public maxCapPerAlpha;
 
     // Reserve ample slots for future upgrades; do not change after first deployment.
     // (v2.1: batchSeconds + 3 x uint64 pack into the existing slot; maxPerBinCapBps +
-    //  minDynamicCutoff take one new slot => gap 11 -> 10, total layout size unchanged)
+    //  minDynamicCutoff + maxCapPerAlpha share one new slot => gap 11 -> 10, total layout
+    //  size unchanged)
     uint256[10] internal __gap;
 }
