@@ -90,6 +90,9 @@ const config: HardhatUserConfig = {
       url: fujiRpc,
       chainId: 43113,
       accounts: defaultAccounts,
+      // FUJI_GAS=<units> switches off automatic gas estimation (which queries the
+      // "pending" block and is rejected by several public Fuji RPCs); unset = auto.
+      gas: process.env.FUJI_GAS ? Number(process.env.FUJI_GAS) : "auto",
     },
   },
   etherscan: {
