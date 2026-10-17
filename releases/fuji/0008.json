@@ -1,0 +1,93 @@
+{
+  "network": "fuji",
+  "version": 8,
+  "contracts": {
+    "IcicleOptionsCreate2Factory": "0xE0C6e0264DAd64654901A2466ADA26483A326760",
+    "IcicleOptionsDeployer": "0xeA810aC8eF7863A101afAc14fDB8fa96151aB669",
+    "FeePolicyNull": "0xcf5f6D310Ee30f7dea2Ca30C06189165bc53f923",
+    "FeePolicy10bps": "0xcb9103d7B73c2771092c6316F20B7ef3aAB20809",
+    "FeePolicy50bps": "0xfa614C25E52d6007905f875e45803698d60287e0",
+    "FeePolicy100bps": "0x5124EBbCE7986D8039a15644d715A6757be11c1e",
+    "FeePolicy200bps": "0xd1BB966387Da91B7BA1e0a837F975F706f25156c",
+    "PaymentToken": "0x199F29b8ef9ff78978325045373aB9eFCf3FE871",
+    "IcicleOptionsCoreProxy": "0x516F1301b7546220a5c575d21B8D34A35210E646",
+    "IcicleOptionsCoreImplementation": "0xB3D1dd0E70435BdF33C7Db4cD71695ef8B9C72e3",
+    "IcicleOptionsPositionProxy": "0x795b7E5Adddd23FDD97B71980fe8C667F6Ee76Ce",
+    "IcicleOptionsPositionImplementation": "0x541509b562FC652A37613e83c91455f33ebEF8fa",
+    "IcicleOptionsLPShareProxy": "0xcde46B5A9dc0233097Dd1Fb296086d42928656d1",
+    "IcicleOptionsLPShareImplementation": "0x325AD2B4401Bc8BaeC0a5d4073a9b2c139f90449",
+    "IcicleOptionsLPShare": "0xcde46B5A9dc0233097Dd1Fb296086d42928656d1",
+    "TradeModule": "0x4f9Ae840C764ef18245c8C0c0510d3d6c35d68dD",
+    "MarketLifecycleModule": "0xb43F8b694E40AFcC0Af4935f237dd595c7bab269",
+    "OracleModule": "0xfD038b955193ADEe68094C4ec2a21adA13409DEe",
+    "RiskModule": "0x7750BBef65d46Ea13F133fCAd5d22dd9E59519f0",
+    "LPVaultModule": "0xaFB9B1Eca939e125ED4A566a81cF3C57a5dD0789",
+    "LazyMulSegmentTree": "0xA4B0602e13a1B9f3Da804a8B1dFc96726f6DdEd0",
+    "IcicleOptionsCoreImplV21": "0xB3D1dd0E70435BdF33C7Db4cD71695ef8B9C72e3"
+  },
+  "config": {
+    "settlementSubmitWindow": "120",
+    "settlementFinalizeDeadline": "180",
+    "pendingOpsWindow": "60",
+    "redstoneFeedId": "AVAX",
+    "redstoneFeedDecimals": 6,
+    "redstoneMaxSampleDistance": "600",
+    "redstoneFutureTolerance": "60",
+    "lpShareTokenName": "Icicle Options LP",
+    "lpShareTokenSymbol": "ICOLP",
+    "operatorAllowlist": [
+      "0xCd37EAb6b0eeffa3dC0b0f138ae57275a54Fc88d"
+    ],
+    "owners": {
+      "core": "0xCd37EAb6b0eeffa3dC0b0f138ae57275a54Fc88d",
+      "position": "0xCd37EAb6b0eeffa3dC0b0f138ae57275a54Fc88d",
+      "lpShare": "0xCd37EAb6b0eeffa3dC0b0f138ae57275a54Fc88d"
+    },
+    "deployerEOA": "0xCd37EAb6b0eeffa3dC0b0f138ae57275a54Fc88d"
+  },
+  "history": [
+    {
+      "action": "deploy",
+      "deployer": "0xCd37EAb6b0eeffa3dC0b0f138ae57275a54Fc88d",
+      "version": 2,
+      "timestamp": 1772409437
+    },
+    {
+      "action": "update-modules",
+      "deployer": "0xCd37EAb6b0eeffa3dC0b0f138ae57275a54Fc88d",
+      "version": 3,
+      "timestamp": 1782218908
+    },
+    {
+      "action": "deploy",
+      "deployer": "0xCd37EAb6b0eeffa3dC0b0f138ae57275a54Fc88d",
+      "version": 4,
+      "timestamp": 1782232150
+    },
+    {
+      "action": "update-modules",
+      "deployer": "0xCd37EAb6b0eeffa3dC0b0f138ae57275a54Fc88d",
+      "version": 5,
+      "timestamp": 1782232365
+    },
+    {
+      "action": "deploy",
+      "deployer": "0xCd37EAb6b0eeffa3dC0b0f138ae57275a54Fc88d",
+      "version": 6,
+      "timestamp": 1782232910
+    },
+    {
+      "action": "update-modules",
+      "deployer": "0xCd37EAb6b0eeffa3dC0b0f138ae57275a54Fc88d",
+      "version": 7,
+      "timestamp": 1791988473
+    },
+    {
+      "action": "update-modules",
+      "deployer": "0xCd37EAb6b0eeffa3dC0b0f138ae57275a54Fc88d",
+      "version": 8,
+      "timestamp": 1792152120
+    }
+  ],
+  "generatedAt": "2026-10-16T12:02:00.995Z"
+}

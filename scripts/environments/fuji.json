@@ -1,6 +1,6 @@
 {
   "network": "fuji",
-  "version": 7,
+  "version": 8,
   "contracts": {
     "IcicleOptionsCreate2Factory": "0xE0C6e0264DAd64654901A2466ADA26483A326760",
     "IcicleOptionsDeployer": "0xeA810aC8eF7863A101afAc14fDB8fa96151aB669",
@@ -11,19 +11,19 @@
     "FeePolicy200bps": "0xd1BB966387Da91B7BA1e0a837F975F706f25156c",
     "PaymentToken": "0x199F29b8ef9ff78978325045373aB9eFCf3FE871",
     "IcicleOptionsCoreProxy": "0x516F1301b7546220a5c575d21B8D34A35210E646",
-    "IcicleOptionsCoreImplementation": "0x55eFa53dC397950a57477CBCDcb16A7138C4107a",
+    "IcicleOptionsCoreImplementation": "0xB3D1dd0E70435BdF33C7Db4cD71695ef8B9C72e3",
     "IcicleOptionsPositionProxy": "0x795b7E5Adddd23FDD97B71980fe8C667F6Ee76Ce",
     "IcicleOptionsPositionImplementation": "0x541509b562FC652A37613e83c91455f33ebEF8fa",
     "IcicleOptionsLPShareProxy": "0xcde46B5A9dc0233097Dd1Fb296086d42928656d1",
     "IcicleOptionsLPShareImplementation": "0x325AD2B4401Bc8BaeC0a5d4073a9b2c139f90449",
     "IcicleOptionsLPShare": "0xcde46B5A9dc0233097Dd1Fb296086d42928656d1",
     "TradeModule": "0x4f9Ae840C764ef18245c8C0c0510d3d6c35d68dD",
-    "MarketLifecycleModule": "0x7Ec30B27261f6B8ad1455e62be004dAb21964840",
+    "MarketLifecycleModule": "0xb43F8b694E40AFcC0Af4935f237dd595c7bab269",
     "OracleModule": "0xfD038b955193ADEe68094C4ec2a21adA13409DEe",
     "RiskModule": "0x7750BBef65d46Ea13F133fCAd5d22dd9E59519f0",
     "LPVaultModule": "0xaFB9B1Eca939e125ED4A566a81cF3C57a5dD0789",
-    "LazyMulSegmentTree": "0xeDCb2960fD4834d31835133dE56800cf702ac225",
-    "IcicleOptionsCoreImplV21": "0x55eFa53dC397950a57477CBCDcb16A7138C4107a"
+    "LazyMulSegmentTree": "0xA4B0602e13a1B9f3Da804a8B1dFc96726f6DdEd0",
+    "IcicleOptionsCoreImplV21": "0xB3D1dd0E70435BdF33C7Db4cD71695ef8B9C72e3"
   },
   "config": {
     "settlementSubmitWindow": "120",
@@ -81,6 +81,12 @@
       "deployer": "0xCd37EAb6b0eeffa3dC0b0f138ae57275a54Fc88d",
       "version": 7,
       "timestamp": 1791988473
+    },
+    {
+      "action": "update-modules",
+      "deployer": "0xCd37EAb6b0eeffa3dC0b0f138ae57275a54Fc88d",
+      "version": 8,
+      "timestamp": 1792152120
     }
   ],
   "release": "v2t1"
