@@ -116,7 +116,7 @@ async function main() {
 
   for (let b = startBatch; b <= endBatch; b++) {
     try {
-      const result = await core.getDailyPnl(BigInt(b));
+      const result = await core.getDailyPnl.staticCall(BigInt(b));
       const lt = result[0] as bigint;
       const ftot = result[1] as bigint;
       const gt = result[3] as bigint;

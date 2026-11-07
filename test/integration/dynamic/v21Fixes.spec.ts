@@ -17,6 +17,9 @@ const REFRESH = new ethers.Interface(["function refreshTradeOracle(uint256 marke
 const DP = { w: WAD, volBinsWad: 8n * WAD, sigmaMinWad: wad(0.75), sigmaMaxWad: 8n * WAD, floorWad: wad(0.03), perBinCap: 1_000_000_000_000n, anchorCenterBin: ANCHOR };
 const ticks = (bin: number) => [MIN + bin * SP, MIN + (bin + 1) * SP] as const;
 
+// solidity-coverage instrumentation inflates gas use far past the fixed limits below
+const gas = (n: number) => (process.env.COVERAGE ? n * 20 : n);
+
 describe("v2.1 dynamic-pricing fixes", () => {
   async function setup() {
     const sys = await deployFullSystem({ submitWindow: 5, opsWindow: 5 });
@@ -54,7 +57,7 @@ describe("v2.1 dynamic-pricing fixes", () => {
     const [lo, hi] = ticks(bin);
     const payload = buildRedstonePayload(humanPrice, (await time.latest()) - 1, authorisedWallets);
     const data = core.interface.encodeFunctionData("openPosition", [id, lo, hi, q, ethers.MaxUint256]) + payload.replace(/^0x/, "");
-    return trader.sendTransaction({ to: await core.getAddress(), data, gasLimit: 15_000_000 });
+    return trader.sendTransaction({ to: await core.getAddress(), data, gasLimit: gas(15_000_000) });
   }
 
   // ---------------- F1 ----------------

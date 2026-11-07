@@ -30,6 +30,21 @@ type MarketStruct = {
   accumulatedFees: bigint;
   minFactor: bigint;
   deltaEt: bigint;
+  dynamicEnabled: boolean;
+  anchorCenterBin: number;
+  cachedOracleTs: number;
+  cachedOracleTick: number;
+  perBinCap: number;
+  accumulatedPremiums: bigint;
+  accumulatedProceeds: bigint;
+  dynW: bigint;
+  dynVolBinsWad: bigint;
+  dynSigmaMinWad: bigint;
+  dynSigmaMaxWad: bigint;
+  dynFloorWad: bigint;
+  dynVersion: number;
+  tradingHalted: boolean;
+  haltedAt: bigint;
 };
 
 function buildMarket(

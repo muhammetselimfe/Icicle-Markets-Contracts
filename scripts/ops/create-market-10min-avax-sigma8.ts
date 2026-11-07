@@ -19,8 +19,6 @@ const DURATION_SEC = 10 * 60;
 const ALPHA_WAD = "100000000000000000000"; // 100 WAD
 const SEED_CHUNK_SIZE = 50;
 const SIGMA_BINS = 8; // wider bell curve — fairer for traders
-const BATCH_SECONDS = 86400;
-const BATCH_TZ_OFFSET = 28800;
 
 function generateGaussianFactors(numBins: number, centerBin: number, sigma: number): bigint[] {
   const factors: bigint[] = [];

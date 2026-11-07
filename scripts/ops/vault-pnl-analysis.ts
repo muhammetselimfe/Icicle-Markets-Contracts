@@ -58,7 +58,6 @@ async function main() {
   const now = Math.floor(Date.now() / 1000);
 
   console.log(`\n--- Pending (Unprocessed) Market P&L ---`);
-  let pendingLt = 0;
   let pendingFees = 0;
   let pendingMarkets = 0;
 
@@ -101,7 +100,6 @@ async function main() {
       const r = await core.getDailyPnl.staticCall(BigInt(bid));
       const lt = Number(r[0]) / 1e18;
       const ftot = Number(r[1]) / 1e18;
-      const processed = r[6];
       if (lt !== 0 || ftot !== 0) {
         pendingBatchLt += lt;
         pendingBatchFtot += ftot;

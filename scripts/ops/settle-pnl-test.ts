@@ -15,7 +15,6 @@ async function main() {
   const { ethers } = hre;
   const env = loadEnvironment("fuji");
   const core = await ethers.getContractAt("IcicleOptionsCore", env.contracts.IcicleOptionsCoreProxy);
-  const [deployer] = await ethers.getSigners();
 
   const currentBatch = Number(await core.getCurrentBatchId());
   console.log(`Current batch: ${currentBatch}`);
@@ -98,7 +97,7 @@ async function main() {
   // === Settle #41 (live price) ===
   // Use $9.89 as approximation (AVAX ~$9.89)
   console.log("\n--- Market #41 (α=1000, $26.8K volume) ---");
-  const before41 = await readBatchPnl("BEFORE #41");
+  await readBatchPnl("BEFORE #41");
   await settleMarket(41, 989, "live ~$9.89");
   const after41 = await readBatchPnl("AFTER #41");
 

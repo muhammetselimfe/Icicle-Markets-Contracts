@@ -33,7 +33,6 @@ async function main() {
   const env = loadEnvironment("fuji");
   const core = await ethers.getContractAt("IcicleOptionsCore", env.contracts.IcicleOptionsCoreProxy);
   const feeAddr = env.contracts.FeePolicy100bps;
-  const [deployer] = await ethers.getSigners();
 
   // 1) ensure feed = AVAX
   const AVAX = ethers.encodeBytes32String("AVAX");

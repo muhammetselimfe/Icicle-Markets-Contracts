@@ -24,8 +24,6 @@ async function main() {
   console.log(`Deployer: ${deployer.address}`);
 
   const core = await ethers.getContractAt("IcicleOptionsCore", coreAddress);
-  const tradeArtifact = await hre.artifacts.readArtifact("TradeModule");
-  const tradeIface = new ethers.Interface(tradeArtifact.abi);
 
   const paymentAddr = await core.paymentToken();
   const payment = await ethers.getContractAt("IERC20", paymentAddr);
@@ -160,15 +158,7 @@ async function main() {
 
         const maxCost = result.cost + (result.cost * SLIPPAGE_BPS) / 10000n + 1n;
         const tx = await core.openPosition(mktId, BigInt(lo), BigInt(up), result.qty, maxCost);
-        const receipt = await tx.wait();
-
-        let posId = "?";
-        for (const log of receipt?.logs ?? []) {
-          try {
-            const parsed = tradeIface.parseLog(log);
-            if (parsed?.name === "PositionOpened") { posId = parsed.args.positionId.toString(); break; }
-          } catch {}
-        }
+        await tx.wait();
 
         totalCost += result.cost;
         opened++;

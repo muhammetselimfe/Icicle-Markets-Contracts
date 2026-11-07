@@ -32,10 +32,6 @@ async function main() {
       const maxLoss = alpha * Math.log(bins);
       const priorType = deltaEt > 0.1 ? "Bell" : "Uniform";
 
-      // Get batch P&L if settled
-      let lt = 0;
-      let ftot = 0;
-
       console.log(`#${id}: ${status} | α=${alpha.toFixed(1)} | bins=${bins} | prior=${priorType} (ΔEt=${deltaEt.toFixed(1)}) | fees=$${fees.toFixed(2)} | maxLoss=$${maxLoss.toFixed(1)} | positions=${positions}`);
 
       if (settled) {

@@ -14,14 +14,12 @@ async function main() {
     const alpha = Number(m.liquidityParameter) / 1e18;
     const numBins = Number(m.numBins);
     const minTick = Number(m.minTick);
-    const maxTick = Number(m.maxTick);
     const spacing = Number(m.tickSpacing);
     const settleTick = Number(m.settlementTick);
     const centerTick = minTick + Math.floor(numBins / 2) * spacing;
     const distBins = Math.abs(settleTick - centerTick) / spacing;
     
     // Max vault loss = α × ln(numBins)
-    const maxLoss = alpha * Math.log(numBins);
     
     console.log(
       `#${id}    | ${alpha.toFixed(0).padStart(4)} | —       | ${numBins.toString().padStart(4)} | ${settleTick.toString().padStart(10)} | $${(settleTick/100).toFixed(2).padStart(8)} | $${(centerTick/100).toFixed(2)} | ${distBins.toFixed(0)} bins`

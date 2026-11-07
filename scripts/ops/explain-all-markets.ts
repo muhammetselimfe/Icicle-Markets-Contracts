@@ -23,7 +23,6 @@ async function main() {
       const settleTick = Number(m.settlementTick);
       const startTs = Number(m.startTimestamp);
       const endTs = Number(m.endTimestamp);
-      const settleTs = Number(m.settlementTimestamp);
       const feePolicy = m.feePolicy as string;
       const duration = (endTs - startTs) / 60;
       const centerTick = minTick + Math.floor(numBins / 2) * spacing;

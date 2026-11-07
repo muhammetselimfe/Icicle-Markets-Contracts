@@ -17,8 +17,6 @@ async function main() {
 
   const [deployer] = await ethers.getSigners();
   const core = await ethers.getContractAt("IcicleOptionsCore", coreAddress);
-  const tradeArtifact = await hre.artifacts.readArtifact("TradeModule");
-  const tradeIface = new ethers.Interface(tradeArtifact.abi);
 
   const paymentAddr = await core.paymentToken();
   const payment = await ethers.getContractAt("IERC20", paymentAddr);

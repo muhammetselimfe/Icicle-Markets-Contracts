@@ -4,7 +4,6 @@ import { loadEnvironment } from "../utils/environment";
 async function main() {
   const { ethers } = hre;
   const env = loadEnvironment("fuji");
-  const core = await ethers.getContractAt("IcicleOptionsCore", env.contracts.IcicleOptionsCoreProxy!);
   const position = await ethers.getContractAt("IcicleOptionsPosition", env.contracts.IcicleOptionsPositionProxy!);
 
   const [deployer] = await ethers.getSigners();

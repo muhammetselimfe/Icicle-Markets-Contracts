@@ -110,8 +110,6 @@ async function main() {
     await (await payment.approve(coreAddress, 50_000_000_000n)).wait();
   }
 
-  const tradeArtifact = await hre.artifacts.readArtifact("TradeModule");
-  const tradeIface = new ethers.Interface(tradeArtifact.abi);
 
   // Position templates
   interface Pos { lower: number; upper: number; target: bigint; label: string; }

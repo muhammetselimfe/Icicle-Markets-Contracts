@@ -11,7 +11,7 @@ async function main() {
     const endTs = Number(m.endTimestamp);
     const settleTs = Number(m.settlementTimestamp);
     const batchForEnd = Math.floor(endTs / 86400);
-    console.log(`Market #${id}: settled=${m.settled}, settleTick=${m.settleTick}, endTs=${endTs} (batch ${batchForEnd}), settleTs=${settleTs}`);
+    console.log(`Market #${id}: settled=${m.settled}, settleTick=${m.settlementTick}, endTs=${endTs} (batch ${batchForEnd}), settleTs=${settleTs}`);
   }
 
   const currentBatch = Number(await core.getCurrentBatchId());

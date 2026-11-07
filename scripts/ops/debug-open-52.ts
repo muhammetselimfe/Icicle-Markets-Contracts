@@ -34,7 +34,7 @@ async function main() {
   const paymentAddr = await core.paymentToken();
   const usdc = await ethers.getContractAt("IERC20", paymentAddr);
   const balance = await usdc.balanceOf(userAddr);
-  const allowance = await usdc.allowanceOf ? 0 : await usdc.allowance(userAddr, env.contracts.IcicleOptionsCoreProxy);
+  const allowance = await usdc.allowance(userAddr, env.contracts.IcicleOptionsCoreProxy);
   console.log(`Balance: $${(Number(balance) / 1e6).toFixed(2)}`);
   console.log(`Allowance: $${(Number(allowance) / 1e6).toFixed(2)}`);
 

@@ -12,12 +12,9 @@ async function main() {
 
   const marketId = 9n;
   const m = await core.markets(marketId);
-  const minTick = Number(m[12]);
-  const maxTick = Number(m[13]);
   const tickSpacing = Number(m[14]);
 
   // Get LP vault state
-  const lpShareAddr = envData.contracts.IcicleOptionsLPShareProxy;
   const paymentAddr = await core.paymentToken();
   const payment = await ethers.getContractAt("IERC20", paymentAddr);
 

@@ -84,9 +84,7 @@ async function main() {
 
   // Total if we fill ALL bins to max
   let z1_all = 0;
-  for (const f of factors) {
-    z1_all += Math.min(100, 100); // all at max
-  }
+  z1_all = factors.length * 100; // all at max
   const allMaxCost = alpha * Math.log(z1_all / z0_gauss);
   console.log(`\nAll bins to MAX: cost = $${allMaxCost.toFixed(2)}`);
 

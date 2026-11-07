@@ -8,7 +8,7 @@ async function main() {
   const [deployer] = await ethers.getSigners();
 
   // Check current state
-  const [bsBefore, trBefore] = await core.getCapitalStack();
+  const [bsBefore] = await core.getCapitalStack();
   const bsNav = Number(bsBefore) / 1e18;
   console.log(`Current backstop: $${bsNav.toFixed(2)}`);
 

@@ -50,10 +50,10 @@ async function main() {
 
   // Check what the actual cost would be using quote
   try {
-    const cost = await core.quoteCost(marketId, loBin, hiBin, qty2);
+    const cost = await core.calculateOpenCost.staticCall(marketId, loBin, hiBin, qty2);
     console.log(`\nQuoted cost for 100 WAD in bins ${loBin}-${hiBin}: $${(Number(cost)/1e6).toFixed(4)}`);
   } catch (e: any) {
-    console.log(`quoteCost failed: ${e.message?.slice(0, 200)}`);
+    console.log(`calculateOpenCost failed: ${e.message?.slice(0, 200)}`);
   }
 }
 main().catch(console.error);

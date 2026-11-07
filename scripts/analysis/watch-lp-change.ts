@@ -88,7 +88,7 @@ async function main() {
     const navAfter = f(await core.getVaultNav.staticCall());
 
     const dp = await core.getDailyPnl.staticCall(batchId);
-    const lt = f(dp[0]), ftot = f(dp[1]);
+    const lt = f(dp[0]);
     const m = await core.markets(id);
     console.log(
       `${String(i).padStart(3)}  ${label.padEnd(28)} ${String(winBin).padStart(6)}    ${f(m.accumulatedPremiums).toFixed(2).padStart(8)}  ` +

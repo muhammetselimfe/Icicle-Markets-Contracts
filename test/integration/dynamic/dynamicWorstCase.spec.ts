@@ -16,6 +16,9 @@ const REFRESH = new ethers.Interface(["function refreshTradeOracle(uint256 marke
 const DP = { w: WAD, volBinsWad: 8n * WAD, sigmaMinWad: wad(0.75), sigmaMaxWad: 8n * WAD, floorWad: wad(0.05), perBinCap: PER_BIN_CAP_UNITS * 1_000_000n, anchorCenterBin: ANCHOR };
 const tk = (bin: number) => [MIN + bin * SP, MIN + (bin + 1) * SP] as const;
 
+// solidity-coverage instrumentation inflates gas use far past the fixed limits below
+const gas = (n: number) => (process.env.COVERAGE ? n * 20 : n);
+
 describe("v2 dynamic worst-case (L1 gates)", () => {
   async function setup() {
     const sys = await deployFullSystem({ submitWindow: 5, opsWindow: 5 });
@@ -52,7 +55,7 @@ describe("v2 dynamic worst-case (L1 gates)", () => {
     const [lo, hi] = tk(bin);
     const q = BigInt(units) * 1_000_000n;
     const c = await core.calculateOpenCost.staticCall(id, lo, hi, q);
-    await core.connect(who).openPosition(id, lo, hi, q, c * 3n + 5_000_000n, { gasLimit: 12_000_000 });
+    await core.connect(who).openPosition(id, lo, hi, q, c * 3n + 5_000_000n, { gasLimit: gas(12_000_000) });
     return c;
   }
   async function settleAndBatch(core: any, owner: any, id: bigint, tSet: bigint, winBin: number) {
@@ -78,12 +81,12 @@ describe("v2 dynamic worst-case (L1 gates)", () => {
     await time.increaseTo(Number(start) + 50 + 700); // age 700 > 600
     const [lo, hi] = tk(ANCHOR);
     await expect(
-      core.connect(trader).openPosition(id, lo, hi, 10_000_000n, ethers.MaxUint256, { gasLimit: 12_000_000 })
+      core.connect(trader).openPosition(id, lo, hi, 10_000_000n, ethers.MaxUint256, { gasLimit: gas(12_000_000) })
     ).to.be.revertedWithCustomError(core, "OracleStaleForTrade");
     // a fresh refresh re-enables trading
     await refresh(core, owner, id, MIN + ANCHOR * SP);
     await expect(
-      core.connect(trader).openPosition(id, lo, hi, 10_000_000n, ethers.MaxUint256, { gasLimit: 12_000_000 })
+      core.connect(trader).openPosition(id, lo, hi, 10_000_000n, ethers.MaxUint256, { gasLimit: gas(12_000_000) })
     ).to.not.be.reverted;
   });
 
@@ -111,7 +114,7 @@ describe("v2 dynamic worst-case (L1 gates)", () => {
     const navAfter = await core.getVaultNav.staticCall();
 
     const dp = await core.getDailyPnl.staticCall(batchId);
-    const lt = dp[0] as bigint, ftot = dp[1] as bigint, ft = dp[2] as bigint, gt = dp[3] as bigint;
+    const lt = dp[0] as bigint, ft = dp[2] as bigint, gt = dp[3] as bigint;
 
     // payout = winning position quantity (40 units) in WAD
     const payoutWad = 40n * 1_000_000n * 1_000_000_000_000n;

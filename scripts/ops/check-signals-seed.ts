@@ -27,7 +27,7 @@ async function main() {
 
       for (let bin = 0; bin < bins; bin++) {
         try {
-          const prob = await core.getBinProbability(BigInt(marketId), BigInt(bin));
+          const prob = await (core as any).getBinProbability(BigInt(marketId), BigInt(bin));
           const p = Number(prob) / 1e18;
           factors.push(p);
           if (p < minFactor) minFactor = p;
@@ -54,7 +54,7 @@ async function main() {
         // Try reading factors directly from segment tree
         // Or try getMarketState
         try {
-          const state = await core.getMarketPricing(BigInt(marketId));
+          const state = await (core as any).getMarketPricing(BigInt(marketId));
           console.log("  Market pricing:", state);
         } catch (e: any) {
           console.log("  getMarketPricing failed:", e.message?.slice(0, 100));

@@ -5,7 +5,6 @@ async function main() {
   const { ethers } = hre;
   const env = loadEnvironment("fuji");
   const core = await ethers.getContractAt("IcicleOptionsCore", env.contracts.IcicleOptionsCoreProxy);
-  const [deployer] = await ethers.getSigners();
 
   // Use TICKS not bins
   const marketId = 52n;

@@ -23,7 +23,7 @@ async function main() {
   const period = Number(await core.batchSeconds()) || 86400;
   const batchId = Math.floor((Number(m.settlementTimestamp) - 28800) / period);
   try {
-    const dp = await core.getDailyPnl(batchId);
+    const dp = await core.getDailyPnl.staticCall(batchId);
     console.log(`\nbatch ${batchId} daily P&L: L_t=$${fmt(dp[0]).toFixed(2)}  fees=$${fmt(dp[1]).toFixed(2)}`);
   } catch (e: any) { console.log(`\nbatch ${batchId} P&L read failed: ${(e.shortMessage||e.message||"").slice(0,40)}`); }
 

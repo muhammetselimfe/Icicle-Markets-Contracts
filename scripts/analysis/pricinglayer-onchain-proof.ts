@@ -49,7 +49,6 @@ async function main() {
   for (const win of [40, 44, 48, 52, 60, 70]) rows.push(await row(win));
 
   // no-lag fairness: center exactly on the winner with sigma matched -> trader edge ~ 0
-  const at60narrow = rows.find((x) => x.win === 60)!.n;
   console.log("\nReadings (per 1 toxic unit on the winning bin; payout = 1.0):");
   const w60 = rows.find((x) => x.win === 60)!;
   console.log(`  drift to bin 60 (=20 bins from anchor):`);

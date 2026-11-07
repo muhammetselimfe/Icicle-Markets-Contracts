@@ -11,7 +11,6 @@ async function main() {
   const { ethers } = hre;
   const env = loadEnvironment("fuji");
   const coreProxy = env.contracts.IcicleOptionsCoreProxy;
-  const [deployer] = await ethers.getSigners();
 
   // 1) deploy v2 impl
   console.log("[manual-upgrade] deploying v2 IcicleOptionsCore impl...");
@@ -39,7 +38,7 @@ async function main() {
   console.log(`[manual-upgrade] upgraded. tx=${rcpt?.hash}`);
 
   // 4) confirm the proxy now runs v2
-  const impl2 = await ethers.provider.getStorageAt(
+  const impl2 = await ethers.provider.getStorage(
     coreProxy, "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc" // ERC1967 impl slot
   );
   console.log(`[manual-upgrade] proxy impl slot now -> 0x${impl2.slice(26)}`);

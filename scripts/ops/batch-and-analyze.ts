@@ -1,13 +1,11 @@
 import hre from "hardhat";
 import { loadEnvironment } from "../utils/environment";
 
-const WAD = 10n ** 18n;
 
 async function main() {
   const { ethers } = hre;
   const env = loadEnvironment("fuji");
   const core = await ethers.getContractAt("IcicleOptionsCore", env.contracts.IcicleOptionsCoreProxy);
-  const posNft = await ethers.getContractAt("IcicleOptionsPosition", env.contracts.IcicleOptionsPositionProxy);
   const paymentAddr = await core.paymentToken();
   const usdc = await ethers.getContractAt("IERC20", paymentAddr);
 

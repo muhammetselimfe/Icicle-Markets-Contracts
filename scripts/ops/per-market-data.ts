@@ -68,7 +68,6 @@ async function main() {
     const centerTick = Number(m.minTick) + Math.floor(Number(m.numBins) / 2) * spacing;
     const distBins = Math.abs(settleTick - centerTick) / spacing;
     const accFees = Number(m.accumulatedFees) / 1e18;
-    const posCount = Number(m.openPositionCount);
     const deltaEt = Number(m.deltaEt) / 1e18;
     const initialRoot = Number(m.initialRootSum) / 1e18;
     const maxLoss = alpha * Math.log(Number(m.numBins));

@@ -94,7 +94,6 @@ async function main() {
   }
 
   // Also try from deployer for comparison
-  const [deployer] = await ethers.getSigners();
   try {
     const cost = await core.calculateOpenCost.staticCall(marketId, lower, upper, probeQty);
     const maxCost = cost + (cost * 1000n) / 10000n;

@@ -12,9 +12,8 @@ async function main() {
       const now = Math.floor(Date.now() / 1000);
       const end = Number(m.endTimestamp);
       const settled = m.settled;
-      const state = Number(m.state);
       const elapsed = now - end;
-      console.log(`#${id}: settled=${settled}, state=${state}, ended ${elapsed}s ago, settleTick=${Number(m.settlementTick)}`);
+      console.log(`#${id}: settled=${settled}, ended ${elapsed}s ago, settleTick=${Number(m.settlementTick)}`);
     } catch(e: any) { console.log(`#${id}: error - ${e.message?.slice(0,80)}`); }
   }
 }

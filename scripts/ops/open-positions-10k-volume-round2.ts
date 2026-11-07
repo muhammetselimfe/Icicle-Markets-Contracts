@@ -24,7 +24,6 @@ function generateRound2Positions(
   minTick: number,
   maxTick: number,
   tickSpacing: number,
-  numBins: number,
   anchor: number,
 ): Position[] {
   const positions: Position[] = [];
@@ -102,7 +101,6 @@ async function main() {
     const settled = m[1];
     const failed = m[3];
     const numBins = Number(m[4]);
-    const startTs = Number(m[8]);
     const endTs = Number(m[9]);
     const minTick = Number(m[12]);
     const maxTick = Number(m[13]);
@@ -117,7 +115,7 @@ async function main() {
       continue;
     }
 
-    const positions = generateRound2Positions(minTick, maxTick, tickSpacing, numBins, anchors[marketId]);
+    const positions = generateRound2Positions(minTick, maxTick, tickSpacing, anchors[marketId]);
     console.log(`  Generated ${positions.length} position specs`);
 
     let opened = 0;

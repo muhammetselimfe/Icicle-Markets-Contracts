@@ -50,7 +50,7 @@ async function main() {
   console.log(`${"=".repeat(60)}`);
 
   try {
-    const tx = await core.processDailyBatch();
+    const tx = await core.processDailyBatch(currentBatch);
     const receipt = await tx.wait();
     console.log(`Tx: ${receipt?.hash}`);
     console.log("processDailyBatch OK!");
@@ -58,8 +58,8 @@ async function main() {
     console.log(`processDailyBatch error: ${e.message?.slice(0, 200)}`);
     // Try with explicit batch ID
     try {
-      console.log("Trying with explicit current batch...");
-      const tx = await core.processDailyBatch();
+      console.log("Trying the previous batch...");
+      const tx = await core.processDailyBatch(currentBatch - 1);
       const receipt = await tx.wait();
       console.log(`Tx: ${receipt?.hash}`);
     } catch (e2: any) {

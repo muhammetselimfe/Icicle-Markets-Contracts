@@ -3,8 +3,8 @@ import { expect } from "chai";
 import { time } from "@nomicfoundation/hardhat-network-helpers";
 import { deployFullSystem } from "../../helpers/fullSystem";
 import { deploySeedData } from "../../helpers";
-import { uniformFactors, toBatchId, batchStartTimestamp, advancePastBatchEnd } from "../../helpers/constants";
-import { authorisedWallets, buildRedstonePayload, submitWithPayload } from "../../helpers/redstone";
+import { uniformFactors, toBatchId, batchStartTimestamp } from "../../helpers/constants";
+import { authorisedWallets, buildRedstonePayload } from "../../helpers/redstone";
 
 const WAD = 10n ** 18n;
 const wad = (x: number) => BigInt(Math.round(x * 1e6)) * 10n ** 12n;
@@ -60,7 +60,7 @@ describe("v2 dynamic pricing", () => {
   const ticks = (bin: number) => [MIN + bin * SP, MIN + (bin + 1) * SP] as const;
 
   it("createMarketDynamic stores config and flags the market dynamic", async () => {
-    const { core, owner, feeAddr } = await setup();
+    const { core, feeAddr } = await setup();
     const { id } = await createDynamic(core, feeAddr);
     const m = await core.markets(id);
     expect(m.dynamicEnabled).to.equal(true);

@@ -28,7 +28,7 @@ async function main() {
   const navBefore = Number(ethers.formatUnits(await core.getVaultNav(), 18));
   await (await core.processDailyBatch(settleBatch)).wait();
   const navAfter = Number(ethers.formatUnits(await core.getVaultNav(), 18));
-  const dp = await core.getDailyPnl(settleBatch);
+  const dp = await core.getDailyPnl.staticCall(settleBatch);
   const lt = Number(ethers.formatUnits(dp[0], 18)), ftot = Number(ethers.formatUnits(dp[1], 18));
 
   console.log("\n================ LP P&L ANALYSIS (market " + id + ") ================");

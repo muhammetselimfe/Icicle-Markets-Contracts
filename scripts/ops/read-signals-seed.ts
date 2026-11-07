@@ -1,9 +1,7 @@
 import hre from "hardhat";
-import { loadEnvironment } from "../utils/environment";
 
 async function main() {
   const { ethers } = hre;
-  const env = loadEnvironment("prod");
 
   // Read SeedData contracts — packed uint256[] stored as contract code
   // Each uint256 = 32 bytes = one bin factor in WAD

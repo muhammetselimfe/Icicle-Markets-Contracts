@@ -62,7 +62,6 @@ async function main() {
       const end = Number(m.endTimestamp);
       const now = Math.floor(Date.now() / 1000);
       const isActive = !settled && now < end;
-      const isExpired = !settled && now >= end;
 
       if (isActive) activeCount++;
       if (settled) settledCount++;

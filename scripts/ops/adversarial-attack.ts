@@ -24,7 +24,6 @@ async function main() {
   await (await token.approve(await core.getAddress(), ethers.MaxUint256)).wait();
 
   const premBefore = Number(ethers.formatUnits((await core.markets(id)).accumulatedPremiums, 18));
-  const tickAt = (b: number) => [minTick + b * sp, minTick + (b + 1) * sp] as const;
 
   // each attack: (label, loBin, hiBin, units)
   const attacks: [string, number, number, number][] = [
