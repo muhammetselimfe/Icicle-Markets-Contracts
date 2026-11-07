@@ -38,8 +38,9 @@ const DAILY_VOL = Number(process.env.DAILY_VOL ?? 0.045);      // AVAX ~4.5 %/da
 // the trade-staleness gate + payload-attached trades, not by a small α.
 const CAP_PER_ALPHA = Number(process.env.CAP_PER_ALPHA ?? 4);
 const PER_BIN_CAP_UNITS = Number(process.env.PER_BIN_CAP_UNITS ?? "3600");
-const ALPHA_WAD = ethers.parseEther(process.env.ALPHA ?? String(PER_BIN_CAP_UNITS / CAP_PER_ALPHA)).toString();
-const wad = (x: number) => BigInt(Math.round(x * 1e9)) * 10n ** 9n;
+const ALPHA_WAD = wad(Number(process.env.ALPHA ?? PER_BIN_CAP_UNITS / CAP_PER_ALPHA)).toString();
+const START_DELAY_SEC = Number(process.env.START_DELAY_SEC ?? 300); // trading opens this long after creation
+const SEED_CHUNK_SIZE = 50;
 const W = WAD;                       // 1.0 = full oracle anchoring (LP safest; lower to leave trader edge)
 const SIGMA_MIN = wad(0.75);         // floor bell width (non-binding while trading is open with a >=900s cutoff)
 const TAU = wad(Number(process.env.TAU ?? 0.03)); // v2.1: tail-mass budget (3 %); floor derived from σ each trade
